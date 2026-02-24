@@ -143,7 +143,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-muted-foreground/60 text-[10px] font-mono uppercase tracking-widest">
-              Solo Leveling System v1.0
+              Solo Leveling System v1.0.0
             </p>
           </div>
         </div>
