@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Swords, Eye, EyeOff } from 'lucide-react'
 
 interface LoginScreenProps {
@@ -14,11 +14,22 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showSystem, setShowSystem] = useState(false)
   const [error, setError] = useState('')
-
+const [battleStatus, setBattleStatus] = useState<'idle' | 'connecting' | 'running' | 'finished' | 'error'>('idle')
+const [battleLogs, setBattleLogs] = useState<string[]>([])
+const wsRef = useRef<WebSocket | null>(null)
   useEffect(() => {
-    const timer = setTimeout(() => setShowSystem(true), 500)
-    return () => clearTimeout(timer)
-  }, [])
+  const timer = setTimeout(() => setShowSystem(true), 500)
+  return () => clearTimeout(timer)
+}, [])
+
+// ⬇️ ESTE useEffect VA AQUÍ, JUSTO DESPUÉS DEL OTRO
+useEffect(() => {
+  return () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.close()
+    }
+  }
+}, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,6 +47,18 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
       onLogin(username.trim())
     }, 1500)
   }
+
+
+const [frame, setFrame] = useState<string>("");
+
+const startStream = () => {
+  const ws = new WebSocket("ws://localhost:8000/ws/stream-game");
+
+  ws.onmessage = (msg) => {
+    const base64 = msg.data;
+    setFrame(`data:image/jpeg;base64,${base64}`);
+  };
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
@@ -138,6 +161,24 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                 'Arise'
               )}
             </button>
+                
+<button
+  type="button"
+  onClick={startStream}
+  className="w-full py-3 rounded bg-blue-600/20 text-blue-400 border border-blue-600/40"
+>
+  Ver Batalla en Pantalla
+</button>
+
+{frame && (
+  <img
+    src={frame}
+    className="w-full border border-system-glow/20 mt-4 rounded shadow"
+  />
+)}
+
+
+
           </form>
 
           {/* Footer */}
