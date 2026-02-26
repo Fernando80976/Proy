@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useState, useEffect, useRef } from 'react'
 import { Swords, Eye, EyeOff } from 'lucide-react'
@@ -52,11 +52,30 @@ useEffect(() => {
 const [frame, setFrame] = useState<string>("");
 
 const startStream = () => {
-  const ws = new WebSocket("ws://localhost:8000/ws/stream-game");
+  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
+
+  // 🔥 WebSocket PÚBLICO usando Cloudflare Tunnel
+  const ws = new WebSocket("wss://somerset-brook-played-savannah.trycloudflare.com/ws/stream-game");
+  wsRef.current = ws;
+
+  ws.onopen = () => console.log("WS stream abierto");
+  ws.onerror = (err) => console.error("WS stream error:", err);
+  ws.onclose = () => console.log("WS stream cerrado");
 
   ws.onmessage = (msg) => {
-    const base64 = msg.data;
-    setFrame(`data:image/jpeg;base64,${base64}`);
+    try {
+      const data = JSON.parse(msg.data);
+
+      if (data.error) {
+        console.warn("Servidor:", data.error);
+        return;
+      }
+    } catch {
+      // No es JSON → es imagen → OK
+    }
+
+    // Imagen válida
+    setFrame(`data:image/jpeg;base64,${msg.data}`);
   };
 };
 
