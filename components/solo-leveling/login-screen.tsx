@@ -52,26 +52,52 @@ useEffect(() => {
 const [frame, setFrame] = useState<string>("");
 
 const startStream = async () => {
-  // 1) PRIMERO pedir a tu backend que abra el juego en tu PC
-  await fetch("https://somerset-brook-played-savannah.trycloudflare.com/start-game", {
+  // 1) Arranca el juego en tu PC
+  await fetch("https://ing-alerts-losing-lecture.trycloudflare.com/start-game", {
     method: "POST",
   });
 
-  // Espera 2 segundos a que Pygame abra la ventana
-  await new Promise(r => setTimeout(r, 2000));
+  // 2) Espera un poco más (Pygame necesita tiempo para crear y enfocar la ventana)
+  await new Promise((r) => setTimeout(r, 4000)); // <- antes tenías 2000
 
-  // 2) LUEGO abre el WebSocket
-  const ws = new WebSocket("wss://somerset-brook-played-savannah.trycloudflare.com/ws/stream-game");
+  // 3) Abre el WebSocket
+  const ws = new WebSocket("wss://ing-alerts-losing-lecture.trycloudflare.com/ws/stream-game");
   wsRef.current = ws;
 
+  ws.onopen = () => {
+    console.log("WS stream abierto");
+  };
+
+  ws.onerror = (err) => {
+    console.error("WS stream error:", err);
+  };
+
+  ws.onclose = () => {
+    console.log("WS stream cerrado");
+  };
+
   ws.onmessage = (msg) => {
+    // 🔹 Tu backend manda:
+    //   - JSON: {status: "..."} o {error: "..."} -> NO es imagen
+    //   - Texto base64 -> SÍ es imagen
     try {
       const data = JSON.parse(msg.data);
+
       if (data.error) {
-        console.warn("Servidor:", data.error);
-        return;
+        console.warn("Servidor (error):", data.error);
+        return; // ⛔ no intentes pintarlo como imagen
       }
-    } catch {}
+
+      if (data.status) {
+        console.log("Servidor (status):", data.status);
+        return; // ⛔ no intentes pintarlo como imagen
+      }
+
+      // Si algún día envías otro tipo de JSON, también lo ignoras aquí.
+      return;
+    } catch {
+      // No era JSON -> es la imagen base64 correcta
+    }
 
     setFrame(`data:image/jpeg;base64,${msg.data}`);
   };
