@@ -51,30 +51,28 @@ useEffect(() => {
 
 const [frame, setFrame] = useState<string>("");
 
-const startStream = () => {
-  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
+const startStream = async () => {
+  // 1) PRIMERO pedir a tu backend que abra el juego en tu PC
+  await fetch("https://somerset-brook-played-savannah.trycloudflare.com/start-game", {
+    method: "POST",
+  });
 
-  // 🔥 WebSocket PÚBLICO usando Cloudflare Tunnel
+  // Espera 2 segundos a que Pygame abra la ventana
+  await new Promise(r => setTimeout(r, 2000));
+
+  // 2) LUEGO abre el WebSocket
   const ws = new WebSocket("wss://somerset-brook-played-savannah.trycloudflare.com/ws/stream-game");
   wsRef.current = ws;
-
-  ws.onopen = () => console.log("WS stream abierto");
-  ws.onerror = (err) => console.error("WS stream error:", err);
-  ws.onclose = () => console.log("WS stream cerrado");
 
   ws.onmessage = (msg) => {
     try {
       const data = JSON.parse(msg.data);
-
       if (data.error) {
         console.warn("Servidor:", data.error);
         return;
       }
-    } catch {
-      // No es JSON → es imagen → OK
-    }
+    } catch {}
 
-    // Imagen válida
     setFrame(`data:image/jpeg;base64,${msg.data}`);
   };
 };
