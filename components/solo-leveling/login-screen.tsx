@@ -26,7 +26,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
   const startTurnBattle = () => {
     setOpenBattle(true)
-    const ws = new WebSocket("ws://localhost:8081/ws")
+    const ws = new WebSocket("wss://repoback-h7gh.onrender.com/ws")
     wsRef.current = ws
 
     ws.onmessage = evt => {
