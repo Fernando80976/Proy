@@ -16,21 +16,29 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [error, setError] = useState('')
   const wsRef = useRef<WebSocket | null>(null)
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const [gameState, setGameState] = useState<any>(null)
+  const [battle, setBattle] = useState<any>(null)
+  const [openBattle, setOpenBattle] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSystem(true), 500)
     return () => clearTimeout(timer)
   }, [])
 
-  useEffect(() => {
-    return () => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.close()
-      }
+  const startTurnBattle = () => {
+    setOpenBattle(true)
+    const ws = new WebSocket("ws://localhost:8081/ws")
+    wsRef.current = ws
+
+    ws.onmessage = evt => {
+      const st = JSON.parse(evt.data)
+      setBattle({ ...st })
     }
-  }, [])
+  }
+
+  const sendSkill = (i: number) => {
+    if (!wsRef.current) return
+    wsRef.current.send(JSON.stringify({ skill: i }))
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,73 +56,6 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
       onLogin(username.trim())
     }, 1500)
   }
-
-  // 🎮 Enviar inputs al backend
-  const sendInput = (input: any) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-      p1: input      // Player 1 enviará WASD, J, K…
-    }));
-
-    }
-  }
-
-  // 🎮 EVENTOS DEL TECLADO → PYGAME
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!gameState) return
-
-      if (e.key === "w") sendInput({ up: true })
-      if (e.key === "s") sendInput({ down: true })
-      if (e.key === "a") sendInput({ left: true })
-      if (e.key === "d") sendInput({ right: true })
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [gameState])
-
-  // 🎮 Iniciar WebSocket del juego
-  const startStream = async () => {
-
-    const ws = new WebSocket("ws://localhost:8081/ws")
-    wsRef.current = ws
-
-    ws.onopen = () => {
-      console.log("WS GAME conectado")
-    }
-
-    ws.onerror = err => {
-      console.error("WS GAME ERROR:", err)
-    }
-
-    ws.onmessage = evt => {
-      try {
-        const state = JSON.parse(evt.data)
-        setGameState(state)
-      } catch {
-        console.warn("Mensaje no es JSON")
-      }
-    }
-  }
-
-  // 🎮 Pintar en canvas cuando cambie gameState
-  useEffect(() => {
-  if (!gameState || !canvasRef.current) return;
-
-  const ctx = canvasRef.current.getContext("2d");
-  if (!ctx) return;
-
-  ctx.clearRect(0, 0, 800, 600);
-
-  // Player 1
-  ctx.fillStyle = "cyan";
-  ctx.fillRect(gameState.p1.x, gameState.p1.y, 30, 30);
-
-  // Player 2 (enemigo o IA)
-  ctx.fillStyle = "red";
-  ctx.fillRect(gameState.p2.x, gameState.p2.y, 30, 30);
-}, [gameState]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
@@ -135,7 +76,6 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         ))}
       </div>
 
-      {/* Scan line effect */}
       <div className="absolute inset-0 pointer-events-none opacity-5">
         <div
           className="absolute inset-0 bg-gradient-to-b from-transparent via-system-glow/10 to-transparent h-20"
@@ -143,13 +83,10 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         />
       </div>
 
-      {/* Login Panel */}
-      <div
-        className={`relative z-10 w-full max-w-md mx-4 transition-all duration-1000 ${showSystem ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-      >
+      {/* UI principal */}
+      <div className={`relative z-10 w-full max-w-md mx-4 transition-all duration-1000 ${showSystem ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="system-panel rounded-lg p-8">
 
-          {/* Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <Swords className="w-8 h-8 text-system-glow" />
@@ -159,86 +96,82 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
             <p className="text-muted-foreground text-sm font-sans tracking-wide">
               {'[You have been chosen as a Player]'}
             </p>
-            <p className="text-muted-foreground text-xs mt-1 font-sans">
-              {'Enter your credentials to access the System'}
-            </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-mono text-system-glow uppercase tracking-widest">
-                Hunter Name
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-background/80 border border-system-glow/30 rounded px-4 py-3 text-foreground font-sans"
-                placeholder="Sung Jinwoo"
-              />
-            </div>
+            <input
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              className="w-full bg-background/80 border border-system-glow/30 rounded px-4 py-3 text-foreground"
+              placeholder="Sung Jinwoo"
+            />
 
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-mono text-system-glow uppercase tracking-widest">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-background/80 border border-system-glow/30 rounded px-4 py-3 text-foreground font-sans pr-12"
-                  placeholder="Enter password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full bg-background/80 border border-system-glow/30 rounded px-4 py-3"
+              placeholder="Enter password"
+            />
 
-            {error && (
-              <p className="text-system-red text-sm text-center">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 rounded font-mono text-sm uppercase bg-system-glow/20"
-            >
+            <button type="submit" disabled={isLoading} className="w-full py-3 rounded bg-system-glow/20">
               {isLoading ? "Connecting..." : "Arise"}
             </button>
 
-            {/* 🎮 Iniciar juego */}
+            {/* JUEGO DE TURNOS */}
             <button
               type="button"
-              onClick={startStream}
-              className="w-full py-3 rounded bg-blue-600/20 text-blue-400 border border-blue-600/40"
+              onClick={startTurnBattle}
+              className="w-full py-3 rounded bg-purple-600/20 text-purple-300 border border-purple-600/40"
             >
-              Iniciar Juego
+              Iniciar Combate de Turnos
             </button>
 
-            {/* 🎮 Lienzo del juego */}
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={600}
-              className="w-full border border-system-glow/20 mt-4 rounded shadow bg-black"
-            />
+            {openBattle && battle && (
+              <div className="bg-black/60 border border-purple-500 p-4 rounded mt-4 text-white">
+
+                <h2 className="font-mono text-xl text-purple-300 mb-2">
+                  {battle.enemy.name}
+                </h2>
+                <p className="text-red-400">HP: {battle.enemy.hp}/{battle.enemy.max_hp}</p>
+
+                <hr className="my-3 border-purple-500/30" />
+
+                <h2 className="font-mono text-lg text-blue-300">You</h2>
+                <p className="text-cyan-400">HP: {battle.player.hp}/{battle.player.max_hp}</p>
+
+                <hr className="my-3 border-purple-500/30" />
+
+                <h3 className="text-purple-300 mb-2">Skills</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {battle.player.skills.map((sk: any, i: number) => (
+                    <button
+                      key={i}
+                      disabled={sk.cd > 0 || battle.turn !== "player"}
+                      onClick={() => sendSkill(i)}
+                      className="bg-purple-800/40 border border-purple-500/40 rounded px-2 py-2 text-xs disabled:opacity-40"
+                    >
+                      {sk.name}
+                      <br />
+                      {sk.cd > 0 ? `CD: ${sk.cd}` : "READY"}
+                    </button>
+                  ))}
+                </div>
+
+                <hr className="my-3 border-purple-500/30" />
+
+                <div className="text-xs text-purple-200 h-24 overflow-y-auto font-mono">
+                  {battle.log.map((l: string, idx: number) => (
+                    <p key={idx}>{l}</p>
+                  ))}
+                </div>
+
+              </div>
+            )}
 
           </form>
-
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-muted-foreground/60 text-[10px] font-mono uppercase tracking-widest">
-              Solo Leveling System v1.0.0
-            </p>
-          </div>
 
         </div>
       </div>
