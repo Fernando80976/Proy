@@ -109,6 +109,11 @@ export interface PlayerData {
   jobClass: string;
 }
 
+export interface PlayerAuthSession {
+  username: string;
+  sessionToken: string;
+}
+
 // ===== DEFAULT DATA =====
 
 const DEFAULT_SKILLS: Skill[] = [
@@ -548,6 +553,11 @@ export function resetDailyQuests(player: PlayerData): PlayerData {
 const STORAGE_KEY = 'solo_leveling_player';
 const AUTH_KEY = 'solo_leveling_auth';
 
+interface LoginResponse {
+  playerData: PlayerData;
+  auth: PlayerAuthSession;
+}
+
 export function savePlayer(player: PlayerData): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(player));
@@ -561,21 +571,85 @@ export function loadPlayer(): PlayerData | null {
   try { return JSON.parse(data); } catch { return null; }
 }
 
-export function saveAuth(username: string): void {
+export function saveAuth(username: string, sessionToken: string): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(AUTH_KEY, username);
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ username, sessionToken }));
   }
 }
 
-export function loadAuth(): string | null {
+export function loadAuth(): PlayerAuthSession | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(AUTH_KEY);
+  const raw = localStorage.getItem(AUTH_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<PlayerAuthSession>;
+    if (typeof parsed.username === 'string' && typeof parsed.sessionToken === 'string') {
+      return { username: parsed.username, sessionToken: parsed.sessionToken };
+    }
+  } catch {
+    // Legacy value from old versions stored only the username.
+  }
+
+  return null;
 }
 
 export function clearAuth(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(AUTH_KEY);
     localStorage.removeItem(STORAGE_KEY);
+  }
+}
+
+export async function loginOrRegisterPlayer(username: string, password: string): Promise<LoginResponse> {
+  const response = await fetch('/api/player/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({ error: 'No se pudo iniciar sesion.' }));
+    throw new Error(payload.error ?? 'No se pudo iniciar sesion.');
+  }
+
+  return response.json() as Promise<LoginResponse>;
+}
+
+export async function loadPlayerFromCloud(auth: PlayerAuthSession): Promise<PlayerData | null> {
+  try {
+    const response = await fetch('/api/player/load', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(auth),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) return null;
+    const payload = await response.json() as { playerData: PlayerData | null };
+    return payload.playerData;
+  } catch {
+    return null;
+  }
+}
+
+export async function syncPlayerToCloud(auth: PlayerAuthSession, playerData: PlayerData): Promise<boolean> {
+  try {
+    const response = await fetch('/api/player/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...auth, playerData }),
+    });
+
+    return response.ok;
+  } catch {
+    return false;
   }
 }
 

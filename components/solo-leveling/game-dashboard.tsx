@@ -1,7 +1,18 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { PlayerData, savePlayer, loadPlayer, createNewPlayer, saveAuth, loadAuth, clearAuth, addExp } from '@/lib/game-store'
+import {
+  PlayerData,
+  PlayerAuthSession,
+  savePlayer,
+  loadPlayer,
+  saveAuth,
+  loadAuth,
+  clearAuth,
+  loginOrRegisterPlayer,
+  loadPlayerFromCloud,
+  syncPlayerToCloud,
+} from '@/lib/game-store'
 import { LoginScreen } from './login-screen'
 import { StatusWindow } from './status-window'
 import { QuestsPanel } from './quests-panel'
@@ -37,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function GameDashboard() {
   const [player, setPlayer] = useState<PlayerData | null>(null)
+  const [authSession, setAuthSession] = useState<PlayerAuthSession | null>(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [activeTab, setActiveTab] = useState<TabId>('status')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -44,33 +56,71 @@ export function GameDashboard() {
 
   // Load saved state
   useEffect(() => {
-    const auth = loadAuth()
-    if (auth) {
-      const savedPlayer = loadPlayer()
-      if (savedPlayer) {
-        setPlayer(savedPlayer)
+    let ignore = false
+
+    async function bootstrapFromStorageAndCloud() {
+      const auth = loadAuth()
+      if (!auth) return
+
+      setAuthSession(auth)
+
+      const localPlayer = loadPlayer()
+      if (localPlayer && !ignore) {
+        setPlayer(localPlayer)
         setIsLoggedIn(true)
       }
+
+      const cloudPlayer = await loadPlayerFromCloud(auth)
+      if (!ignore && cloudPlayer) {
+        setPlayer(cloudPlayer)
+        setIsLoggedIn(true)
+        savePlayer(cloudPlayer)
+      }
+    }
+
+    bootstrapFromStorageAndCloud()
+
+    return () => {
+      ignore = true
     }
   }, [])
 
   // Auto-save
   useEffect(() => {
-    if (player) savePlayer(player)
-  }, [player])
+    if (!player) return
 
-  const handleLogin = (username: string) => {
-    const existing = loadPlayer()
-    const p = existing && existing.name === username ? existing : createNewPlayer(username)
-    saveAuth(username)
-    savePlayer(p)
-    setPlayer(p)
-    setIsLoggedIn(true)
-    showSystemMessage('System activated. Welcome, Player.')
+    savePlayer(player)
+
+    if (!authSession) return
+
+    const syncTimer = setTimeout(() => {
+      void syncPlayerToCloud(authSession, player)
+    }, 800)
+
+    return () => clearTimeout(syncTimer)
+  }, [player, authSession])
+
+  const handleLogin = async (username: string, password: string) => {
+    try {
+      const payload = await loginOrRegisterPlayer(username, password)
+      const session = payload.auth
+
+      saveAuth(session.username, session.sessionToken)
+      savePlayer(payload.playerData)
+      setAuthSession(session)
+      setPlayer(payload.playerData)
+      setIsLoggedIn(true)
+      showSystemMessage('System activated. Cloud sync online.')
+      return { ok: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo iniciar sesion.'
+      return { ok: false, message }
+    }
   }
 
   const handleLogout = () => {
     clearAuth()
+    setAuthSession(null)
     setPlayer(null)
     setIsLoggedIn(false)
   }
