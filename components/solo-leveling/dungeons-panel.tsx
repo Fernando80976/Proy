@@ -1,8 +1,8 @@
 'use client'
 
-import { PlayerData, DungeonInfo, getDungeons, clearDungeon, extractShadow, restPlayer, getRankColor } from '@/lib/game-store'
-import { Landmark, Skull, Gift, Layers, Lock, Swords, Moon, Ghost, RotateCw, Filter } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { PlayerData, DungeonInfo, getDungeons, clearDungeon, extractShadow, restPlayer, getRankColor, loadAuth } from '@/lib/game-store'
+import { Landmark, Skull, Layers, Lock, Swords, Moon, Ghost, RotateCw, Filter } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 interface DungeonsPanelProps {
@@ -12,6 +12,36 @@ interface DungeonsPanelProps {
 
 type BattleState = 'idle' | 'entering' | 'fighting' | 'victory' | 'defeat'
 
+interface TurnBattleSkill {
+  name: string
+  cd: number
+  description?: string
+  type?: string
+  power?: number
+}
+
+interface TurnBattleFighter {
+  name: string
+  hp: number
+  max_hp: number
+  level?: number
+  status?: string
+  skills: TurnBattleSkill[]
+}
+
+interface TurnBattleState {
+  enemy: TurnBattleFighter
+  player: TurnBattleFighter
+  turn: 'player' | 'enemy' | string
+  round?: number
+  log: string[]
+}
+
+const getHpPercent = (hp: number, maxHp: number) => {
+  if (!maxHp || maxHp <= 0) return 0
+  return Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100)))
+}
+
 export function DungeonsPanel({ player, onUpdatePlayer }: DungeonsPanelProps) {
   const [dungeons] = useState<DungeonInfo[]>(getDungeons)
   const [selectedDungeon, setSelectedDungeon] = useState<DungeonInfo | null>(null)
@@ -20,6 +50,12 @@ export function DungeonsPanel({ player, onUpdatePlayer }: DungeonsPanelProps) {
   const [showBattle, setShowBattle] = useState(false)
   const [bossHp, setBossHp] = useState(100)
   const [rankFilter, setRankFilter] = useState<string>('all')
+  const wsRef = useRef<WebSocket | null>(null)
+  const [turnBattle, setTurnBattle] = useState<TurnBattleState | null>(null)
+  const [openTurnBattle, setOpenTurnBattle] = useState(false)
+  const [turnBattleStatus, setTurnBattleStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
+  const [turnBattleError, setTurnBattleError] = useState('')
+  const [activeSkill, setActiveSkill] = useState<number | null>(null)
 
   const ranks = ['all', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'National']
 
@@ -50,27 +86,43 @@ export function DungeonsPanel({ player, onUpdatePlayer }: DungeonsPanelProps) {
     const winChance = Math.min(0.95, Math.max(0.3, totalPower / (totalPower + dungeonDifficulty)))
 
     let currentFloor = 1
+    const totalFloors = selectedDungeon.floors
     const interval = setInterval(() => {
-      if (currentFloor <= selectedDungeon.floors) {
-        const floorCleared = Math.random() < winChance
-        if (floorCleared) {
-          setBossHp(prev => Math.max(0, prev - (100 / selectedDungeon.floors)))
-          setBattleLog(prev => [...prev, `Floor ${currentFloor}/${selectedDungeon.floors} cleared!`])
-          currentFloor++
-        } else {
-          setBattleState('defeat')
-          setBattleLog(prev => [...prev, `Defeated on floor ${currentFloor}... The dungeon was too strong.`])
+      const floorCleared = Math.random() < winChance
+      
+        
+      if (floorCleared) {
+        const safeFloor = Math.min(currentFloor, totalFloors)
+        setBossHp(prev => Math.max(0, prev - (100 / totalFloors)))
+        setBattleLog(prev => [...prev, `Floor ${safeFloor}/${totalFloors} cleared!`])
+
+        if (safeFloor >= totalFloors) {
+          setBattleState('victory')
+          setBattleLog(prev => [...prev, `Boss "${selectedDungeon.boss}" defeated!`, 'Dungeon cleared!'])
           clearInterval(interval)
+          return
         }
+
+        currentFloor = safeFloor + 1
       } else {
-        setBattleState('victory')
-        setBattleLog(prev => [...prev, `Boss "${selectedDungeon.boss}" defeated!`, 'Dungeon cleared!'])
+        setBattleState('defeat')
+        const safeFloor = Math.min(currentFloor, totalFloors)
+        setBattleLog(prev => [...prev, `Defeated on floor ${safeFloor}... The dungeon was too strong.`])
         clearInterval(interval)
       }
     }, 800)
 
     return () => clearInterval(interval)
   }, [battleState, selectedDungeon, player.stats, player.shadows.length])
+
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+    }
+  }, [])
 
   const handleVictoryRewards = () => {
     if (!selectedDungeon) return
@@ -98,6 +150,67 @@ export function DungeonsPanel({ player, onUpdatePlayer }: DungeonsPanelProps) {
     onUpdatePlayer(restPlayer(player))
   }
 
+  const startTurnBattle = () => {
+    setOpenTurnBattle(true)
+    setTurnBattleError('')
+    setTurnBattleStatus('connecting')
+
+    const auth = loadAuth()
+    if (!auth) {
+      setTurnBattleStatus('error')
+      setTurnBattleError('Sesion no encontrada. Inicia sesion para entrar al combate por turnos.')
+      return
+    }
+
+    if (wsRef.current) {
+      wsRef.current.close()
+      wsRef.current = null
+    }
+
+    const wsBase = process.env.NEXT_PUBLIC_BATTLE_WS_URL ?? 'wss://repoback-h7gh.onrender.com/ws'
+    const wsUrl = `${wsBase}?username=${encodeURIComponent(auth.username)}&session_token=${encodeURIComponent(auth.sessionToken)}`
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      setTurnBattleStatus('connected')
+    }
+
+    ws.onmessage = evt => {
+      try {
+        const st = JSON.parse(evt.data) as TurnBattleState
+        setTurnBattle({ ...st })
+      } catch {
+        setTurnBattleError('No se pudo interpretar la respuesta del servidor de combate.')
+      }
+    }
+
+    ws.onerror = () => {
+      setTurnBattleStatus('error')
+      setTurnBattleError('No fue posible conectar con el servidor de combate por turnos.')
+    }
+
+    ws.onclose = () => {
+      setTurnBattleStatus(prev => (prev === 'error' ? 'error' : 'idle'))
+    }
+  }
+
+  const closeTurnBattle = () => {
+    setOpenTurnBattle(false)
+    setActiveSkill(null)
+    setTurnBattleStatus('idle')
+    if (wsRef.current) {
+      wsRef.current.close()
+      wsRef.current = null
+    }
+  }
+
+  const sendSkill = (i: number) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return
+    setActiveSkill(i)
+    wsRef.current.send(JSON.stringify({ skill: i }))
+  }
+
   return (
     <div className="flex flex-col gap-6 animate-fade-in-up">
       <div className="system-panel rounded-lg p-6">
@@ -107,12 +220,20 @@ export function DungeonsPanel({ player, onUpdatePlayer }: DungeonsPanelProps) {
             Dungeons
           </h2>
           <button
+            type="button"
+            onClick={startTurnBattle}
+            className="px-3 py-2 rounded bg-blue-500/20 text-blue-200 border border-blue-400/40 hover:bg-blue-500/30 transition-colors text-xs font-mono"
+          >
+            Arena por Turnos
+          </button>
+          <button
             onClick={handleRest}
             className="flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-system-glow transition-colors px-2 py-1 rounded border border-border hover:border-system-glow/30"
           >
             <Moon className="w-3 h-3" />
             Rest
           </button>
+          
         </div>
 
         {/* Fatigue Bar */}
@@ -291,6 +412,163 @@ export function DungeonsPanel({ player, onUpdatePlayer }: DungeonsPanelProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {openTurnBattle && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 md:p-4">
+          <div className="relative w-full max-w-6xl h-[calc(100dvh-1rem)] md:h-[calc(100dvh-2rem)] rounded-2xl border border-blue-400/40 bg-slate-950/95 shadow-[0_0_60px_rgba(56,189,248,0.25)] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-blue-400/20 bg-gradient-to-r from-blue-500/20 via-cyan-400/10 to-blue-500/20">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/70">Combat Simulator</p>
+                <h2 className="text-base sm:text-lg md:text-2xl font-mono text-cyan-100">Arena de Turnos - Estilo Pokemon</h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeTurnBattle}
+                className="px-3 py-2 rounded border border-red-400/40 text-red-200 hover:bg-red-500/20 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="p-3 md:p-5 flex-1 min-h-0 flex flex-col gap-3 md:gap-4">
+              {!turnBattle && (
+                <div className="rounded-xl border border-blue-400/30 bg-slate-900/70 p-5 text-center">
+                  <p className="font-mono text-cyan-100 text-lg">
+                    {turnBattleStatus === 'connecting' ? 'Conectando con el servidor de batalla...' : 'Esperando datos del combate...'}
+                  </p>
+                  <p className="text-sm text-cyan-200/70 mt-2">Se abrira el campo en cuanto llegue el primer estado.</p>
+                </div>
+              )}
+
+              {turnBattleError && (
+                <div className="rounded-lg border border-red-500/40 bg-red-950/40 px-4 py-3 text-red-200 text-sm">
+                  {turnBattleError}
+                </div>
+              )}
+
+              {turnBattle && (
+                <>
+                  <div className="rounded-2xl border border-blue-400/30 bg-gradient-to-b from-sky-300/20 via-emerald-300/10 to-slate-900 p-3 md:p-4 relative overflow-hidden h-[34dvh] min-h-[220px] max-h-[320px]">
+                    <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(125,211,252,0.15)_0%,transparent_60%)]" />
+
+                    <div className="relative z-10 w-full h-full">
+                      <div className="absolute right-0 top-0 w-[48%] max-w-sm rounded-xl border border-slate-800 bg-slate-950/85 p-2.5 md:p-3">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-mono text-sm md:text-base text-red-200 truncate">{turnBattle.enemy.name}</p>
+                            <p className="text-xs text-red-100/70">Lv. {turnBattle.enemy.level ?? 50}</p>
+                          </div>
+                          <span className="text-xs px-2 py-1 rounded border border-red-300/30 text-red-100/80">{turnBattle.enemy.status ?? 'NORMAL'}</span>
+                        </div>
+                        <div className="mt-2">
+                          <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-red-500 to-orange-300 transition-all duration-300"
+                              style={{ width: `${getHpPercent(turnBattle.enemy.hp, turnBattle.enemy.max_hp)}%` }}
+                            />
+                          </div>
+                          <p className="text-[11px] text-red-100/80 mt-1 text-right">HP {turnBattle.enemy.hp}/{turnBattle.enemy.max_hp}</p>
+                        </div>
+                      </div>
+
+                      <div className="absolute left-[52%] top-[34%] -translate-x-1/2 -translate-y-1/2 w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full border-4 border-red-300/40 bg-gradient-to-b from-red-400/20 to-black/60 flex items-center justify-center shadow-2xl shadow-red-900/40">
+                        <span className="text-center font-mono text-[10px] sm:text-xs md:text-sm text-red-100 px-2 line-clamp-2">{turnBattle.enemy.name}</span>
+                      </div>
+
+                      <div className="absolute left-[34%] bottom-[12%] -translate-x-1/2 w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 rounded-full border-4 border-cyan-300/40 bg-gradient-to-b from-cyan-300/20 to-black/60 flex items-center justify-center shadow-2xl shadow-cyan-900/40">
+                        <span className="text-center font-mono text-[10px] sm:text-xs md:text-sm text-cyan-100 px-2 line-clamp-2">{turnBattle.player.name}</span>
+                      </div>
+
+                      <div className="absolute left-0 bottom-0 w-[52%] max-w-sm rounded-xl border border-slate-800 bg-slate-950/85 p-2.5 md:p-3">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-mono text-sm md:text-base text-cyan-100 truncate">{turnBattle.player.name}</p>
+                            <p className="text-xs text-cyan-100/70">Lv. {turnBattle.player.level ?? 50}</p>
+                          </div>
+                          <span className="text-xs px-2 py-1 rounded border border-cyan-300/30 text-cyan-100/80">{turnBattle.player.status ?? 'NORMAL'}</span>
+                        </div>
+                        <div className="mt-2">
+                          <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-cyan-500 to-emerald-300 transition-all duration-300"
+                              style={{ width: `${getHpPercent(turnBattle.player.hp, turnBattle.player.max_hp)}%` }}
+                            />
+                          </div>
+                          <p className="text-[11px] text-cyan-100/80 mt-1 text-right">HP {turnBattle.player.hp}/{turnBattle.player.max_hp}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-3 md:gap-4 flex-1 min-h-0">
+                    <div className="rounded-xl border border-cyan-400/30 bg-slate-900/80 p-3 md:p-4 min-h-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-mono text-cyan-100 text-sm sm:text-base md:text-lg">Selecciona Movimiento</h3>
+                        <span className="text-xs px-3 py-1 rounded border border-cyan-300/30 text-cyan-100/80">
+                          {turnBattle.turn === 'player' ? 'Tu turno' : 'Turno enemigo'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(turnBattle.player.skills ?? []).map((sk, i) => {
+                          const disabled = sk.cd > 0 || turnBattle.turn !== 'player' || turnBattleStatus !== 'connected'
+                          const isActive = activeSkill === i
+                          return (
+                            <button
+                              key={i}
+                              disabled={disabled}
+                              onClick={() => sendSkill(i)}
+                              className={`rounded-lg border px-4 py-3 text-left transition-all ${
+                                isActive
+                                  ? 'border-emerald-300 bg-emerald-400/20'
+                                  : 'border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20'
+                              } disabled:opacity-45 disabled:cursor-not-allowed`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-semibold text-cyan-100 text-sm truncate">{sk.name}</p>
+                                <span className="text-[10px] uppercase tracking-wider text-cyan-100/70">{sk.type ?? 'Skill'}</span>
+                              </div>
+                              <p className="text-[11px] mt-1 text-cyan-100/70 line-clamp-2">{sk.description ?? 'Movimiento tactico del cazador.'}</p>
+                              <div className="mt-2 flex items-center justify-between text-xs text-cyan-100/70">
+                                <span>Power: {sk.power ?? '-'}</span>
+                                <span>{sk.cd > 0 ? `CD ${sk.cd}` : 'Ready'}</span>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-indigo-300/30 bg-slate-900/80 p-3 md:p-4 min-h-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-mono text-indigo-100 text-sm sm:text-base md:text-lg">Registro de Combate</h3>
+                        <span className="text-xs text-indigo-100/70">Ronda {turnBattle.round ?? Math.max(turnBattle.log.length, 1)}</span>
+                      </div>
+
+                      <div className="h-full space-y-2 text-sm">
+                        {(turnBattle.log ?? []).length === 0 && (
+                          <p className="text-indigo-100/60">Aun no hay acciones registradas.</p>
+                        )}
+
+                        {(turnBattle.log ?? []).slice(-6).map((entry, index) => (
+                          <div key={`${entry}-${index}`} className="rounded border border-indigo-200/20 bg-indigo-500/10 p-2 text-indigo-100/90 font-mono text-xs md:text-sm">
+                            <span className="text-indigo-200/60 mr-2">{String(index + 1).padStart(2, '0')}.</span>
+                            {entry}
+                          </div>
+                        ))}
+
+                        {(turnBattle.log ?? []).length > 6 && (
+                          <p className="text-[11px] text-indigo-100/60">Mostrando los 6 eventos mas recientes.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

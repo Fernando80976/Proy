@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import { PlayerData, getRankColor, HunterRank } from '@/lib/game-store'
 import { Trophy, Star, Swords, Ghost, Medal } from 'lucide-react'
 
@@ -8,6 +9,7 @@ interface RankingPanelProps {
 }
 
 interface NpcHunter {
+  username?: string
   name: string
   level: number
   rank: HunterRank
@@ -15,6 +17,21 @@ interface NpcHunter {
   kills: number
   dungeons: number
   shadows: number
+}
+
+interface DbHunter {
+  username: string
+  name: string
+  level: number
+  rank: HunterRank
+  title: string
+  kills: number
+  dungeons: number
+  shadows: number
+}
+
+interface RankingApiPayload {
+  players?: DbHunter[]
 }
 
 const NPC_HUNTERS: NpcHunter[] = [
@@ -30,19 +47,54 @@ const NPC_HUNTERS: NpcHunter[] = [
 ]
 
 export function RankingPanel({ player }: RankingPanelProps) {
-  const allHunters = [
-    {
-      name: player.name,
-      level: player.level,
-      rank: player.hunterRank,
-      title: player.title,
-      kills: player.totalMonstersKilled,
-      dungeons: player.totalDungeonClears,
-      shadows: player.shadows.length,
-      isPlayer: true,
-    },
-    ...NPC_HUNTERS.map(h => ({ ...h, isPlayer: false })),
-  ].sort((a, b) => b.level - a.level)
+  const [dbHunters, setDbHunters] = useState<DbHunter[]>([])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadRanking() {
+      try {
+        const response = await fetch('/api/player/ranking', { cache: 'no-store' })
+        if (!response.ok) return
+
+        const payload = await response.json() as RankingApiPayload
+        if (ignore) return
+        setDbHunters(Array.isArray(payload.players) ? payload.players : [])
+      } catch {
+        if (!ignore) setDbHunters([])
+      }
+    }
+
+    void loadRanking()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  const allHunters = useMemo(() => {
+    const normalizedPlayerName = player.name.trim().toLowerCase()
+
+    const merged = [
+      {
+        username: normalizedPlayerName,
+        name: player.name,
+        level: player.level,
+        rank: player.hunterRank,
+        title: player.title,
+        kills: player.totalMonstersKilled,
+        dungeons: player.totalDungeonClears,
+        shadows: player.shadows.length,
+        isPlayer: true,
+      },
+      ...dbHunters
+        .filter(h => h.name.trim().toLowerCase() !== normalizedPlayerName)
+        .map(h => ({ ...h, isPlayer: false })),
+      ...NPC_HUNTERS.map(h => ({ ...h, isPlayer: false })),
+    ]
+
+    return merged.sort((a, b) => b.level - a.level)
+  }, [player, dbHunters])
 
   const playerRank = allHunters.findIndex(h => h.isPlayer) + 1
 
@@ -125,11 +177,11 @@ export function RankingPanel({ player }: RankingPanelProps) {
                 <span className="flex items-center gap-1 text-muted-foreground">
                   <Star className="w-3 h-3 text-system-gold" />{hunter.level}
                 </span>
-                <span className="flex items-center gap-1 text-muted-foreground hidden md:flex">
+                <span className="hidden items-center gap-1 text-muted-foreground md:inline-flex">
                   <Swords className="w-3 h-3" />{hunter.kills}
                 </span>
                 {hunter.shadows > 0 && (
-                  <span className="flex items-center gap-1 text-purple-400 hidden md:flex">
+                  <span className="hidden items-center gap-1 text-purple-400 md:inline-flex">
                     <Ghost className="w-3 h-3" />{hunter.shadows}
                   </span>
                 )}

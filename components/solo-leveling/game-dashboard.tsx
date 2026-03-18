@@ -234,7 +234,7 @@ export function GameDashboard() {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-4xl w-full overflow-y-auto">
+        <main className="flex-1 min-w-0 w-full p-4 md:p-6 lg:p-8 overflow-y-auto">
           {activeTab === 'status' && <StatusWindow player={player} onUpdatePlayer={handleUpdatePlayer} />}
           {activeTab === 'quests' && <QuestsPanel player={player} onUpdatePlayer={handleUpdatePlayer} />}
           {activeTab === 'dungeons' && <DungeonsPanel player={player} onUpdatePlayer={handleUpdatePlayer} />}
