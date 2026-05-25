@@ -1,0 +1,1 @@
+cuando tienes la vida combinada con el objeto y la hp no te baja por debajo del max sin el combinado no se muestra bien en el front el hp

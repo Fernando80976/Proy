@@ -1,0 +1,4 @@
+las armas que use usan o normalmente ocupan una sola mano no funcionan bien
+
+Posible solucion cambiar el dual_hand de las dagas a multi_hand para que se use ese nombre en la logica y 
+luego hacer la logica de las armas que ocupan las 2 manos con dual_hand.

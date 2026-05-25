@@ -1,0 +1,12 @@
+Bug el cual si la fatiga es muy alta y en medio de la batalla supera el 100 el juego deja de funcionar 
+debido a que no deja hacer el update en la tabla profiles por el check de la fatiga
+
+Error:
+VM29010:1 ERROR [BATTLE WS]: ERR_BATTLE_ACTION: {'message': 'new row for relation "profiles" violates check constraint "profiles_check2"', 'code': '23514', 'hint': None, 'details': 'Failing row contains (86fd4f3f-7c48-4cca-b512-50869b2f73bc, Barsa1203, E, 2, 6, 15, 19258, 5191, 609915517, 200, 93, 100, 100, 100, 105, 18, 7, 10, 7, 5, 5, 5, 2026-05-20 11:41:19.312281+00).'}
+
+Select para ver la restricion:
+SELECT 
+    conname AS constraint_name, 
+    pg_get_constraintdef(oid) AS constraint_definition
+FROM pg_constraint 
+WHERE conname = 'profiles_check2';

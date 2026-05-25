@@ -1,0 +1,103 @@
+{
+  "inicio": {
+    "iniciar": "Iniciar Partida",
+    "configuracion": "Configuración",
+    "creditos": "Créditos",
+    "enter": "[ENTER]"
+  },
+  
+  "config": {
+    "protocolo_interfaz": "Protocolo de Interfaz",
+    "nucleo_actual": "NÚCLEO ACTUAL",
+    "modo_azul": "MODO AZUL",
+    "modo_morado": "MODO MORADO",
+    "sincro_lingual": "Sincronización Lingüística",
+    "guardar": "Guardar Preferencias",
+    "idiomas": {
+      "es": "ESPAÑOL",
+      "en": "ENGLISH"
+    }
+  },
+
+  "creditos": {
+    "titulo_p1": "CRÉDITOS DEL",
+    "titulo_p2": "PROYECTO",
+    "volver": "Volver al Menú",
+    "roles": {
+      "frontend": "Desarrollador Frontend",
+      "backend": "Desarrollador Backend"
+    },
+    "descripciones": {
+      "manuel": "Especialista en interfaces inmersivas y animaciones. Encargado de dar vida al Sistema y la experiencia de usuario.",
+      "fernando": "Arquitecto de la lógica del juego y gestión de datos. Experto en Python y la integración con Supabase."
+    }
+  },
+
+  "error": {
+    "titulo": "[ ERROR ]",
+    "advertencia": "ADVERTENCIA DEL SISTEMA",
+    "mensaje_p1": "Has intentado acceder a una ",
+    "mazmorra_no_instanciada": "Mazmorra no Instanciada",
+    "mensaje_p2": " el área que buscas ha sido eliminada por el Administrador o no existe en este servidor.",
+    "volver_seguro": "Volver a la zona segura",
+    "reintentar": "Reintentar última conexión"
+  },
+
+  "status": {
+    "titulo": "ESTADO DEL JUGADOR",
+    "advertencia_fatiga": "ADVERTENCIA: FATIGA ELEVADA",
+    "titulo_actual": "Título Actual",
+    "rango": "Rango",
+    "clase": "CLASE:",
+    "hp": "Salud",
+    "mp": "Magia",
+    "fatiga": "Fatiga",
+    "oro": "ORO",
+    "puntos_disponibles": "Puntos de Atributos:",
+    "atributos": "ATRIBUTOS",
+    "sincro_requerida": "Sincronización del sistema requerida",
+    "esperando_puntos": "Esperando asignación de puntos...",
+    "subiendo_datos": "SUBIENDO DATOS...",
+    "aplicar": "APLICAR STATS",
+    "seleccionar": "Selecciona Stats",
+    "reset_all": "Reiniciar Todo",
+    "no_title": "Sin Título",
+    "loading": "Cargando...",
+    "error_titles": "Error al cargar títulos",
+    "sync": "SINCRONIZANDO CON EL SISTEMA..."
+  },
+
+  "titulos": {
+    "cabecera": "TÍTULOS DE CAZADOR",
+    "subcabecera": "Títulos honoríficos otorgados al Cazador",
+    "vacio": "No se han encontrado títulos en la base de datos del sistema",
+    "activo": "EQUIPADO",
+    "bloqueado": "NO ADQUIRIDO",
+    "efecto_especial": "EFECTO ESPECIAL",
+    "tasa_coleccion": "OBTENIDOS",
+    "aplicando": "SINCRONIZANDO...",
+    "version": "INTERFAZ SISTEMA V.4.0"
+  },
+
+  "backend_errors": {
+    "ERR_INVALID_EMAIL": "El formato del email es inválido para el Sistema.",
+    "ERR_VALIDATION_FAILED": "Error de validación en los datos del Sistema.",
+    "ERR_INTERNAL_SYSTEM": "Fallo crítico en el Sistema: por favor intente más tarde.",
+    "ERR_AUTH_REQUIRED": "ACCESO DENEGADO: El Sistema requiere una sesión activa.",
+    "ERR_AUTH_SESSION_EXPIRED": "SESIÓN INVÁLIDA: El token ha expirado o es corrupto.",
+    "ERR_AUTH_EMAIL_EXISTS": "El email ya está registrado en el Sistema.",
+    "ERR_AUTH_SIGNUP_FAILED": "Error al registrar: Revisa los datos de acceso.",
+    "ERR_AUTH_USER_CREATION_FAILED": "No se pudo crear el usuario en el Sistema.",
+    "ERR_AUTH_HUNTER_NOT_FOUND": "El sistema no reconoce a este cazador.",
+    "ERR_AUTH_INVALID_CREDENTIALS": "Credenciales incorrectas.",
+    "ERR_AUTH_LOGIN_ERROR": "Error al iniciar sesión.",
+    "ERR_STAT_MIN_ONE_POINT": "Debes asignar al menos un punto.",
+    "ERR_STAT_INSUFFICIENT_POINTS": "Puntos insuficientes.",
+    "ERR_TITLE_LOCKED": "No has desbloqueado este título todavía.",
+    "ERR_MISSION_NOT_FOUND": "Misión no encontrada.",
+    "ERR_REWARD_ALREADY_CLAIMED": "Esta recompensa ya ha sido reclamada.",
+    "ERR_MISSION_NOT_COMPLETED": "La misión aún no ha sido completada.",
+    "ERR_MISSION_INSUFFICIENT_PROGRESS": "Progreso insuficiente para reclamar."
+  }
+
+}

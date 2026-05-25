@@ -1,0 +1,1 @@
+Hay un bug si se muere el token y se intenta cambiar el titulo, el cual salta el error pero no redirige

@@ -1,0 +1,1 @@
+min-h-screen cambiarlo a min-h-svh que se adapta mejor al movil

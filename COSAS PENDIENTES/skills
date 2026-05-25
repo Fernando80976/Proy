@@ -1,0 +1,195 @@
+import { 
+  Sparkles, Lock, Zap, Clock, Flame, Sword, Eye, 
+  Wind, Ghost, Heart, Shield, ArrowUpCircle 
+} from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import SkillsService, { type Skill } from '../../services/SkillsService';
+import PreLoader from '../../components/common/Preloader';
+import { toastNotification } from '../../components/common/ToastNotification';
+import { hunterService } from '../../services/StatusService';
+
+// --- Helper de Iconos (Consistente con Stats) ---
+const SkillIcon = ({ name, unlocked, className }: { name: string, unlocked: boolean, className?: string }) => {
+  const baseClass = className || `w-5 h-5 ${unlocked ? 'text-system-glow' : 'text-muted-foreground'}`;
+  const n = name.toLowerCase();
+  if (n.includes('espada') || n.includes('strike')) return <Sword className={baseClass} />;
+  if (n.includes('ojo') || n.includes('percepción')) return <Eye className={baseClass} />;
+  if (n.includes('velocidad') || n.includes('viento')) return <Wind className={baseClass} />;
+  if (n.includes('fuego') || n.includes('llama')) return <Flame className={baseClass} />;
+  if (n.includes('sombra') || n.includes('sigilo')) return <Ghost className={baseClass} />;
+  if (n.includes('salud') || n.includes('vida')) return <Heart className={baseClass} />;
+  if (n.includes('defensa') || n.includes('escudo')) return <Shield className={baseClass} />;
+  return <Sparkles className={baseClass} />;
+};
+
+const SkillsPanel = () => {
+  const queryClient = useQueryClient();
+
+  const { data: player } = useQuery({
+    queryKey: ['playerProfile'],
+    queryFn: hunterService.getProfile,
+  });
+
+  const { data: skills = [], isLoading, isError } = useQuery({
+    queryKey: ['skills'],
+    queryFn: SkillsService.getAllSkills,
+  });
+
+  const upgradeMutation = useMutation({
+    mutationFn: (skillId: number) => SkillsService.upgradeSkill(skillId),
+    onSuccess: (data) => {
+      toastNotification.success("Evolución Exitosa", "El poder de la habilidad ha aumentado.");
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      queryClient.invalidateQueries({ queryKey: ['playerProfile'] });
+    },
+    onError: (err: any) => {
+      toastNotification.error("Error del Sistema", err.message || "Recursos insuficientes.");
+    }
+  });
+
+  const activeSkills = skills.filter(s => s.mana_cost > 0);
+  const passiveSkills = skills.filter(s => s.mana_cost === 0);
+
+  // --- Sub-componente de Fila (Estilo Stats) ---
+  const SkillRow = ({ skill }: { skill: Skill }) => {
+    const nombre = skill.name['es'] || 'Habilidad Desconocida';
+    const isMaxLevel = skill.current_level >= skill.max_level;
+    const currentSP = player?.skill_points ?? 0;
+    const canAfford = currentSP >= skill.base_upgrade_sp_cost;
+
+    return (
+      <div className={`group flex flex-col md:flex-row items-center gap-4 py-4 px-2 border-b border-white/5 transition-colors hover:bg-white/[0.02] ${!skill.is_unlocked && 'opacity-50'}`}>
+        
+        {/* 1. Icono y Nombre (Lado Izquierdo) */}
+        <div className="flex items-center gap-4 w-full md:w-64">
+          <div className={`p-2 rounded border ${skill.is_unlocked ? 'border-system-glow/30 bg-system-glow/5' : 'border-white/10'}`}>
+            {skill.is_unlocked ? <SkillIcon name={nombre} unlocked={true} /> : <Lock className="w-5 h-5 text-muted-foreground" />}
+          </div>
+          <div className="flex flex-col">
+            <span className={`text-xs font-mono tracking-tighter ${skill.mana_cost > 0 ? 'text-blue-400' : 'text-purple-400'}`}>
+              {skill.mana_cost > 0 ? 'HABILIDAD ACTIVA' : 'HABILIDAD PASIVA'}
+            </span>
+            <span className="font-bold font-mono text-white uppercase tracking-tight">{nombre}</span>
+          </div>
+        </div>
+
+        {/* 2. Barra de Maestría (Centro) */}
+        <div className="flex-1 w-full px-2">
+          <div className="flex justify-between items-end mb-1">
+            <span className="text-[10px] font-mono text-muted-foreground uppercase">Maestría</span>
+            <span className="text-[10px] font-mono text-system-glow">{skill.current_level} / {skill.max_level}</span>
+          </div>
+          <div className="h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/5">
+            <div 
+              className={`h-full transition-all duration-700 shadow-[0_0_10px] ${isMaxLevel ? 'bg-amber-400 shadow-amber-400/40' : 'bg-system-glow shadow-system-glow/40'}`}
+              style={{ width: `${(skill.current_level / skill.max_level) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* 3. Stats Detallados (Costes, Potencia...) */}
+        <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end min-w-[280px]">
+          {skill.is_unlocked ? (
+            <>
+              {/* Info rápida: MP y Cooldown */}
+              <div className="flex gap-4">
+                {skill.mana_cost > 0 && (
+                  <div className="text-center">
+                    <span className="block text-[8px] text-muted-foreground uppercase">MP</span>
+                    <span className="text-sm font-mono font-bold text-blue-400">{skill.current_mana_cost ?? skill.mana_cost}</span>
+                  </div>
+                )}
+                <div className="text-center border-l border-white/10 pl-4">
+                  <span className="block text-[8px] text-muted-foreground uppercase">CD</span>
+                  <span className="text-sm font-mono font-bold text-white">{skill.cooldown}T</span>
+                </div>
+              </div>
+
+              {/* Botón de Mejora */}
+              <div className="flex items-center gap-3 ml-4">
+                {!isMaxLevel ? (
+                  <div className="flex flex-col items-end">
+                    <span className="text-[8px] text-system-glow uppercase font-bold">Coste SP</span>
+                    <button
+                      onClick={() => upgradeMutation.mutate(skill.id)}
+                      disabled={upgradeMutation.isPending || !canAfford}
+                      className={`flex items-center gap-2 px-3 py-1 rounded border font-mono text-xs transition-all ${
+                        canAfford 
+                        ? 'border-system-glow bg-system-glow/10 hover:bg-system-glow hover:text-black shadow-lg shadow-system-glow/20' 
+                        : 'border-white/10 text-muted-foreground opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      {skill.next_upgrade_cost} SP
+                      <ArrowUpCircle className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-[10px] font-mono text-amber-400 border border-amber-400/30 px-2 py-1 rounded bg-amber-400/5">MAX</span>
+                )}
+              </div>
+            </>
+          ) : (
+            <span className="text-[10px] font-mono text-red-500/70 uppercase italic bg-red-500/5 px-3 py-1 border border-red-500/20 rounded">
+              Bloqueado: Nivel {skill.min_level_required}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  if (isLoading) return <div className="min-h-[400px] flex items-center justify-center"><PreLoader message="Accediendo a la base de datos de habilidades..." /></div>;
+  if (isError) return <div className="text-center text-red-500 font-mono p-10">ERROR: Falla en la conexión con el Sistema.</div>;
+
+  return (
+    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-10 animate-fade-in mb-20">
+      
+      {/* HUD SUPERIOR (Igual al de Stats) */}
+      <div className="relative border-l-4 border-system-glow bg-gradient-to-r from-system-glow/10 to-transparent p-6 mb-12">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+          <div>
+            <h1 className="text-5xl font-mono font-black system-text tracking-tighter italic uppercase">
+              Habilidades
+            </h1>
+            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.3em] mt-1">
+              Lista de técnicas y artes de combate disponibles
+            </p>
+          </div>
+          
+          <div className="bg-black/40 border border-white/10 px-8 py-3 rounded flex items-center gap-4">
+             <div className="text-right">
+                <span className="block text-[10px] font-mono text-system-glow uppercase">Puntos SP</span>
+                <span className="text-3xl font-mono font-bold text-white leading-none">{player?.skill_points ?? 0}</span>
+             </div>
+             <Sparkles className="w-8 h-8 text-system-glow animate-pulse" />
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN ACTIVAS */}
+      <div className="system-panel bg-black/20 border border-white/5 rounded-lg p-6">
+        <h2 className="text-lg font-mono font-bold text-blue-400 uppercase tracking-widest mb-6 flex items-center gap-3">
+          <div className="w-2 h-2 bg-blue-400 rotate-45" />
+          Habilidades Activas
+        </h2>
+        <div className="flex flex-col">
+          {activeSkills.map(skill => <SkillRow key={skill.id} skill={skill} />)}
+        </div>
+      </div>
+
+      {/* SECCIÓN PASIVAS */}
+      <div className="system-panel bg-black/20 border border-white/5 rounded-lg p-6">
+        <h2 className="text-lg font-mono font-bold text-purple-400 uppercase tracking-widest mb-6 flex items-center gap-3">
+          <div className="w-2 h-2 bg-purple-400 rotate-45" />
+          Habilidades Pasivas
+        </h2>
+        <div className="flex flex-col">
+          {passiveSkills.map(skill => <SkillRow key={skill.id} skill={skill} />)}
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+export default SkillsPanel;

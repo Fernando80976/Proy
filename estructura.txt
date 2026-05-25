@@ -1,0 +1,110 @@
+Listado de rutas de carpetas
+El número de serie del volumen es D0C6-2F81
+C:\USERS\60532807\DOCUMENTS\MANU1203\REACT\TFC\FRONT-TFC\SRC
+|   App.css
+|   App.tsx
+|   index.css
+|   main.tsx
+|   
++---api
+|       ApiClient.ts
+|       AxiosInterceptor.tsx
+|       QueryClient.ts
+|       WsClient.ts
+|       
++---assets
+|   +---icons
+|   +---images
+|   \---sounds
++---components
+|   +---common
+|   |       ClassGuardRoute.tsx
+|   |       ModalConfig.tsx
+|   |       Preloader.tsx
+|   |       ProtectedRoute.tsx
+|   |       SystemNotification.tsx
+|   |       ToastNotification.tsx
+|   |       
+|   +---game
+|   |       ModalBattle.tsx
+|   |       ModalDleMission.tsx
+|   |       ModalReward.tsx
+|   |       ModalTittleSelect.tsx
+|   |       
+|   \---layout
+|           Navbar.tsx
+|           
++---context
+|   |   ToastProvider.tsx
+|   |   
+|   +---notifications
+|   |       SystemNotifyContext.ts
+|   |       SystemNotifyProvider.tsx
+|   |       
+|   \---theme
+|           ThemeContext.ts
+|           ThemeProvider.tsx
+|           
++---hooks
+|   \---game
++---i18n
+|   |   config.ts
+|   |   
+|   \---locales
+|           en.json
+|           es.json
+|           
++---services
+|       AuthService.ts
+|       BattleService.ts
+|       ClassService.ts
+|       DleService.ts
+|       DungeonService.ts
+|       InventoryService.ts
+|       QuestService.ts
+|       RankingService.ts
+|       ShopService.ts
+|       SkillsService.ts
+|       StatusService.ts
+|       
++---types
+|       I18nTypes.d.ts
+|       
++---utils
+\---views
+    +---auth
+    |       Login.tsx
+    |       
+    +---class
+    |       ClassSelection.tsx
+    |       
+    +---credits
+    |       Credits.tsx
+    |       
+    +---dungeons
+    |       Dungeons.tsx
+    |       
+    +---inventory
+    |       Inventory.tsx
+    |       
+    +---notFound
+    |       NotFound.tsx
+    |       
+    +---quests
+    |       Quests.tsx
+    |       
+    +---ranking
+    |       Ranking.tsx
+    |       
+    +---shop
+    |       Shop.tsx
+    |       
+    +---skills
+    |       Skills.tsx
+    |       
+    +---start
+    |       Start.tsx
+    |       
+    \---status
+            Stats.tsx
+            

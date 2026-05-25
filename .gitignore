@@ -1,10 +1,36 @@
-# v0 runtime files (should only exist in preview, not in git)
-__v0_runtime_loader.js
-__v0_devtools.tsx
-__v0_jsx-dev-runtime.ts
-
-# Common ignores
+# Dependencias
 node_modules/
-.next/
-.env*.local
-.DS_Store
+.pnpm-store/
+
+# Builds (Producción)
+dist/
+build/
+out/
+
+# Variables de entorno (¡CRÍTICO! Nunca subas tus keys)
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs y Editores (Configuraciones locales)
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Sistema (Windows/macOS)
+Thumbs.db
+desktop.ini
+DS_Store
+
+# Testing
+coverage/

@@ -1,0 +1,102 @@
+{
+  "inicio": {
+    "iniciar": "Start Game",
+    "configuracion": "Settings",
+    "creditos": "Credits",
+    "enter": "[ENTER]"
+  },
+
+  "config": {
+    "protocolo_interfaz": "Interface Protocol",
+    "nucleo_actual": "CURRENT CORE",
+    "modo_azul": "BLUE MODE",
+    "modo_morado": "PURPLE MODE",
+    "sincro_lingual": "Linguistic Synchronization",
+    "guardar": "Save Preferences",
+    "idiomas": {
+      "es": "SPANISH",
+      "en": "ENGLISH"
+    }
+  },
+
+  "creditos": {
+    "titulo_p1": "PROJECT",
+    "titulo_p2": "CREDITS",
+    "volver": "Return to Menu",
+    "roles": {
+      "frontend": "Frontend Developer",
+      "backend": "Backend Developer"
+    },
+    "descripciones": {
+      "manuel": "Specialist in immersive interfaces and animations. In charge of bringing the System and user experience to life.",
+      "fernando": "Architect of game logic and data management. Expert in Python and integration with Supabase."
+    }
+  },
+
+  "error": {
+    "titulo": "[ ERROR ]",
+    "advertencia": "SYSTEM WARNING",
+    "mensaje_p1": "You have attempted to access an",
+    "mazmorra_no_instanciada": " Uninstanced Dungeon",
+    "mensaje_p2": " The area you are looking for has been removed by the Admin or does not exist on this server.",
+    "volver_seguro": "Return to safe zone",
+    "reintentar": "Retry last connection"
+  },
+
+"status": {
+    "titulo": "PLAYER STATUS",
+    "advertencia_fatiga": "WARNING: HIGH FATIGUE",
+    "titulo_actual": "Current Title",
+    "rango": "Rank",
+    "clase": "CLASS:",
+    "hp": "HP",
+    "mp": "MP",
+    "fatiga": "FATIGUE",
+    "oro": "GOLD",
+    "puntos_disponibles": "Available Points:",
+    "atributos": "ATTRIBUTES",
+    "sincro_requerida": "System synchronization required",
+    "esperando_puntos": "Waiting for stat allocation...",
+    "subiendo_datos": "UPLOADING DATA...",
+    "aplicar": "APPLY STATS",
+    "seleccionar": "Select Stats",
+    "reset_all": "Reset All",
+    "no_title": "No Title",
+    "loading": "Loading...",
+    "error_titles": "Error loading titles",
+    "sync": "SYNCHRONIZING WITH SYSTEM..."
+  },
+
+  "titulos": {
+    "cabecera": "ACHIEVED TITLES",
+    "subcabecera": "AUTHENTICATED BY SYSTEM: Hunter Designations",
+    "vacio": "No titles found in the system database",
+    "activo": "ACTIVE",
+    "bloqueado": "LOCKED BY SYSTEM",
+    "efecto_especial": "SPECIAL EFFECT",
+    "tasa_coleccion": "COLLECTION RATE",
+    "aplicando": "APPLYING TITLE...",
+    "version": "SYSTEM INTERFACE V.4.0"
+  },
+
+  "backend_errors": {
+    "ERR_INVALID_EMAIL": "The email format is invalid for the System.",
+    "ERR_VALIDATION_FAILED": "Validation error in System data.",
+    "ERR_INTERNAL_SYSTEM": "Critical System failure: please try again later.",
+    "ERR_AUTH_REQUIRED": "ACCESS DENIED: The System requires an active session.",
+    "ERR_AUTH_SESSION_EXPIRED": "INVALID SESSION: Token has expired or is corrupt.",
+    "ERR_AUTH_EMAIL_EXISTS": "This email is already registered in the System.",
+    "ERR_AUTH_SIGNUP_FAILED": "Registration error: Review your access data.",
+    "ERR_AUTH_USER_CREATION_FAILED": "Could not create user in the System.",
+    "ERR_AUTH_HUNTER_NOT_FOUND": "The System does not recognize this hunter.",
+    "ERR_AUTH_INVALID_CREDENTIALS": "Invalid credentials.",
+    "ERR_AUTH_LOGIN_ERROR": "Error during login process.",
+    "ERR_STAT_MIN_ONE_POINT": "You must assign at least one point.",
+    "ERR_STAT_INSUFFICIENT_POINTS": "Insufficient points.",
+    "ERR_TITLE_LOCKED": "You have not unlocked this title yet.",
+    "ERR_MISSION_NOT_FOUND": "Mission not found.",
+    "ERR_REWARD_ALREADY_CLAIMED": "This reward has already been claimed.",
+    "ERR_MISSION_NOT_COMPLETED": "The mission has not been completed yet.",
+    "ERR_MISSION_INSUFFICIENT_PROGRESS": "Insufficient progress to claim reward."
+  }
+}
