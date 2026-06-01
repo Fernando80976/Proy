@@ -7,6 +7,14 @@ export interface BattleSkill {
   cd: number;
 }
 
+export interface BattlePotion {
+  inventory_id: number;
+  name: string | { [key: string]: string };
+  quantity: number;
+  stat_type: string;
+  stat_value: number;
+}
+
 export interface BattleEntity {
   name: string;
   hp: number;
@@ -14,6 +22,7 @@ export interface BattleEntity {
   mp: number;
   max_mp: number;
   skills?: BattleSkill[];
+  potions?: BattlePotion[];
 }
 
 export interface BattleState {
@@ -47,8 +56,8 @@ const isBattleState = (data: unknown): data is BattleState => {
 };
 
 export const BattleService = {
-  createConnection: (onMessage: (state: BattleState) => void, dungeonId?: number): WebSocket => {
-    // Usamos el cliente centralizado
+  createConnection: (onMessage: (state: BattleState) => void, dungeonId?: number, onError?: (error: string) => void): WebSocket => {
+    
     const qs = dungeonId ? `?dungeon_id=${dungeonId}` : '';
     const ws = createSocket(qs);
 
@@ -58,6 +67,7 @@ export const BattleService = {
 
         if ("error" in data) {
           console.error("ERROR [BATTLE WS]:", data.error);
+          onError?.(data.error);
           return;
         }
 
@@ -75,9 +85,9 @@ export const BattleService = {
     return ws;
   },
 
-  sendAction: (ws: WebSocket | null, action: string, skill_id?: number, dungeon_id?: number) => {
+  sendAction: (ws: WebSocket | null, action: string, skill_id?: number, dungeon_id?: number, inventory_id?: number) => {
     if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ action, skill_id, dungeon_id }));
+      ws.send(JSON.stringify({ action, skill_id, dungeon_id, inventory_id }));
     }
   }
 };

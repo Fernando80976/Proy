@@ -3,16 +3,16 @@ import apiClient from "../api/ApiClient";
 export interface TranslatedText {
   es: string;
   en: string;
-  [key: string]: string; // Por si añades más idiomas en el futuro
+  [key: string]: string;
 }
 
 export interface PlayerClass {
   id: number;
-  name: TranslatedText;           // Nombre de la clase
+  name: TranslatedText; 
   description: TranslatedText;
-  description_effect: TranslatedText;      // Usamos any o un record porque es JSONB (traducciones)
-  stats_bonus: number;   // El valor que suma
-  target_stat: string;   // A qué stat afecta (strength, agility, etc.)
+  description_effect: TranslatedText;
+  stats_bonus: number;   
+  target_stat: string;   
 }
 
 export interface ClassSelectionResponse {
@@ -31,18 +31,14 @@ export interface checkClassResponse {
 }
 
 export const classService = {
-  /**
-   * Obtiene la lista de clases disponibles desde el backend.
-   * Útil para pintar la pantalla de selección de clase.
-   */
+  
   getClasses: async (): Promise<PlayerClass[]> => {
     const response = await apiClient.get<PlayerClass[]>("/hunter/classes");
     return response.data;
   },
 
   /**
-   * Envía la elección del jugador al backend.
-   * @param data Objeto con el ID de la clase elegida { class_id: 1 }
+   * @param data
    */
   selectClass: async (data: SelectClassData): Promise<ClassSelectionResponse> => {
     const response = await apiClient.post<ClassSelectionResponse>("/hunter/select-class", data);

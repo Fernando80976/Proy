@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Home, ArrowLeft, OctagonAlert } from 'lucide-react';
 
-// Generador de partículas alineado con la estética sutil de las ventanas de estado
+
 const crearParticulasSistema = () => {
   return Array.from({ length: 20 }).map((_, i) => ({
     id: i,
@@ -11,7 +11,7 @@ const crearParticulasSistema = () => {
     top: `${Math.random() * 100}%`,
     delay: `${Math.random() * 4}s`,
     duration: `${6 + Math.random() * 4}s`,
-    size: Math.random() * 2 + 1, // Partículas más finas y elegantes
+    size: Math.random() * 2 + 1, 
   }));
 };
 
@@ -30,12 +30,12 @@ const NotFound: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden font-sans p-4 md:p-8 select-none">
       
-      {/* 1. ATMÓSFERA DE FONDO (Sincronizada con el ecosistema del menú del cazador) */}
+      
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        {/* Destello radial sutil usando el color de resplandor activo del sistema */}
+      
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--color-system-glow)_0%,transparent_65%)] opacity-5" />
         
-        {/* Partículas flotantes del Sistema */}
+      
         {particulasFondo.map((p) => (
           <div
             key={p.id}
@@ -52,7 +52,7 @@ const NotFound: React.FC = () => {
         ))}
       </div>
       
-      {/* 3. MARCAS DE AGUA HUD (Inmersión de Lore del Sistema) */}
+      
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 md:p-10 z-10 font-mono text-[10px] md:text-xs tracking-[0.25em] text-system-glow/20">
         <div className="flex justify-between w-full border-b border-white/5 pb-2">
           <span>[SYSTEM_ERROR // INVALID_URI]</span>
@@ -74,19 +74,19 @@ const NotFound: React.FC = () => {
         </div>
       </div>
 
-      {/* CONTENIDO PRINCIPAL: Caja de diálogo idéntica a los menús del juego */}
+      
       <div className={`relative z-20 w-full max-w-xl mx-auto flex flex-col items-center transition-all duration-700 ${showSystem ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'}`}>
         
-        {/* Contenedor tipo System-Panel */}
+      
         <div className="system-panel rounded-lg p-6 md:p-10 relative w-full bg-card/95 backdrop-blur-md border border-system-glow/20 shadow-[0_0_40px_rgba(0,229,255,0.03)] text-center group overflow-hidden">
           
-          {/* Esquinas angulares HUD idénticas a las interfaces RPG premium */}
+      
           <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-system-glow/40" />
           <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-system-glow/40" />
           <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-system-glow/40" />
           <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-system-glow/40" />
 
-          {/* Icono Central con animación sutil de Flotado */}
+      
           <div className="flex justify-center mb-6">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-system-glow/10 blur-md opacity-50" />
@@ -96,7 +96,7 @@ const NotFound: React.FC = () => {
             </div>
           </div>
 
-          {/* Cabecera del Mensaje del Sistema */}
+      
           <div className="space-y-2 mb-6">
             <span className="font-mono text-xs tracking-[0.3em] font-bold text-system-glow/70 uppercase block">
               🚨 [ {t('error.codigo', 'CODE: 404 - EXCEPTION_FAILED')} ]
@@ -106,7 +106,7 @@ const NotFound: React.FC = () => {
             </h1>
           </div>
 
-          {/* Cuadro de Notificación del Sistema (Estilo Warning/Fatiga) */}
+      
           <div className="py-5 px-4 md:px-6 border border-white/5 bg-white/5 rounded-md space-y-3 mb-6 relative">
             <p className="font-mono text-system-gold text-xs md:text-sm font-bold tracking-[0.2em] uppercase flex items-center justify-center gap-2">
               <OctagonAlert className="w-3.5 h-3.5" />
@@ -121,7 +121,7 @@ const NotFound: React.FC = () => {
             </p>
           </div>
 
-          {/* Barra Estética de carga/progreso rota al estilo Status */}
+      
           <div className="space-y-1 mb-6 text-left">
             <div className="flex justify-between text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
               <span>Sincronización del Entorno</span>
@@ -132,21 +132,21 @@ const NotFound: React.FC = () => {
             </div>
           </div>
 
-          {/* Fila de Datos Técnicos Secundarios */}
+      
           <div className="flex justify-between text-[10px] font-mono text-muted-foreground/40 px-1 uppercase tracking-widest pb-4 border-b border-white/5">
             <span>URI: UNRESOLVED</span>
             <span>GATE: RE_ROUTING_REQUIRED</span>
           </div>
 
-          {/* Botones de Navegación perfectamente mimetizados con el botón "APLICAR" de Status */}
+      
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             
-            {/* Botón Principal: Volver a Inicio (Mismo estilo que el botón de confirmación activo) */}
+      
             <button
               onClick={() => navigate('/')}
               className="relative group overflow-hidden rounded-sm cursor-pointer transition-all duration-300 shadow-[0_0_15px_rgba(0,229,255,0.08)] hover:shadow-[0_0_20px_rgba(0,229,255,0.2)]"
             >
-              {/* Efecto láser de escaneo al pasar el ratón */}
+      
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-system-glow/20 to-transparent group-hover:animate-scan pointer-events-none z-10" />
               
               <div className="relative flex items-center justify-center gap-2.5 py-3 px-4 bg-black border-2 border-system-glow text-system-glow font-system text-xs font-bold uppercase tracking-[0.2em] group-hover:bg-system-glow/10 transition-colors duration-300">
@@ -155,7 +155,7 @@ const NotFound: React.FC = () => {
               </div>
             </button>
             
-            {/* Botón Secundario: Volver Atrás (Mismo estilo que el botón de reset) */}
+      
             <button 
               onClick={() => window.history.back()}
               className="py-3 px-4 rounded-sm bg-white/5 border-2 border-white/10 text-muted-foreground hover:text-white hover:border-white/30 font-system text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 cursor-pointer flex items-center justify-center gap-2.5 hover:bg-white/10"
@@ -168,7 +168,7 @@ const NotFound: React.FC = () => {
 
         </div>
 
-        {/* Identificador de Marca Registrada del Sistema */}
+      
         <p className="mt-6 font-mono text-[9px] tracking-[0.35em] text-muted-foreground/30 uppercase">
           {t('error.proyecto', 'THE ARISE OF MONARCH - STATUS INTERFACE VER 2.0')}
         </p>

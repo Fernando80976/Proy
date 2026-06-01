@@ -23,6 +23,9 @@ import { ClassGuardRoute } from './components/common/ClassGuardRoute.tsx';
 // Comando para iniciar el proyecto:
 // npm run dev
 
+// Comando para el test del proyecto:
+// npm run test
+
 // Comando para sacar estructura de carpetas en windows:
 // tree src /F /A > estructura.txt
 
@@ -30,26 +33,22 @@ function App() {
   return (
     <>
       <Routes>
-        {/* Rutas fuera del sistema (sin Navbar) */}
         <Route path="/" element={<Start />} />
         <Route path="/Credits" element={<Credits />} />
         <Route path="/Login" element={<Login />} />
 
 
         <Route element={<ProtectedRoute />}>
-          {/* Selección de clase: solo si NO tiene clase */}
+
           <Route element={<ClassGuardRoute requireClass={false} />}>
             <Route path="/Selection" element={<ClassSelection />} />
           </Route>
           
-          {/* Rutas DENTRO del sistema (con Navbar): solo si TIENE clase */}
           <Route element={<ClassGuardRoute requireClass={true} />}>
             <Route path="/Game" element={<GameDashboard />}>
 
-              {/* 1. Definimos la ruta INDEX que redirige automáticamente */}
               <Route index element={<Navigate to="/Game/Status" replace />} />
               
-              {/* Vistas del juego */}
               <Route path="Status" element={<StatsView />} />
               <Route path="Quests" element={<QuestsPanel />} />
               <Route path="Dungeons" element={<DungeonsPanel />} />

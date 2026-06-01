@@ -1,12 +1,15 @@
 import { useState, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  ShoppingBag, Coins, Sword, Shield, Droplet, Gem, Box, ShoppingCart, Loader2, LayoutGrid, ChevronLeft, ChevronRight 
+  ShoppingBag, Coins, Sword, Shield, FlaskConical, Gem, Box, ShoppingCart, Loader2, LayoutGrid, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 
-// Servicios y Contextos del proyecto
+
+import * as GiIcons from 'react-icons/gi';
+
+
 import ShopService, { type ShopItem } from '../../services/ShopService';
 import { hunterService } from '../../services/StatusService';
 import PreLoader from '../../components/common/Preloader';
@@ -15,7 +18,7 @@ import { toastNotification } from '../../components/common/ToastNotification';
 
 type FilterOption = 'all' | 'weapon' | 'armor' | 'accessory';
 
-const ITEMS_PER_PAGE = 6; // Cantidad ideal para mantener controlada la UI
+const ITEMS_PER_PAGE = 6;
 
 const getRarityDesign = (rarity: string) => {
   switch (rarity.toUpperCase()) {
@@ -67,12 +70,21 @@ const getRarityDesign = (rarity: string) => {
   }
 };
 
-const ShopItemIcon = ({ type, className }: { type: string, className: string }) => {
+
+const ShopItemIcon = ({ imageKey, type, className }: { imageKey: string | null | undefined, type: string, className: string }) => {
+  if (imageKey) {
+    const IconComponent = (GiIcons as Record<string, React.ComponentType<{ className?: string }>>)[imageKey];
+    if (IconComponent) {
+      return <IconComponent className={className} />;
+    }
+  }
+
+
   switch (type.toLowerCase()) {
     case 'weapon': return <Sword className={className} />;
     case 'armor':  return <Shield className={className} />;
     case 'accessory': return <Gem className={className} />;
-    case 'potion': return <Droplet className={className} />;
+    case 'potion': return <FlaskConical className={className} />;
     default: return <Box className={className} />;
   }
 };
@@ -84,9 +96,7 @@ const ShopPanel = () => {
   const [filter, setFilter] = useState<FilterOption>('all');
   const [currentPage, setCurrentPage] = useState(1);
   
-  // Referencia para scrollear al inicio de la tienda
   const shopTopRef = useRef<HTMLDivElement>(null);
-
   const currentLang = (i18n.language?.split('-')[0] || 'es') as 'es' | 'en';
 
   const { data: profile, isLoading: isLoadingProfile } = useQuery({
@@ -116,20 +126,18 @@ const ShopPanel = () => {
 
   const filteredItems = useMemo(() => items.filter(item => filter === 'all' || item.type === filter), [filter, items]);
 
-  // Lógica de Paginación Computada
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
   const paginatedItems = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredItems, currentPage]);
 
-  // FUNCIÓN CORREGIDA: Sube de manera infalible esperando al final del hilo de ejecución de React
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     
     setTimeout(() => {
       if (shopTopRef.current) {
-        const yOffset = -55; // El margen en píxeles que quieres dejar arriba
+        const yOffset = -55;
         const elementPosition = shopTopRef.current.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset + yOffset;
 
@@ -152,7 +160,7 @@ const ShopPanel = () => {
 
   if (isLoadingProfile || isLoadingItems) {
     return (
-      <div className="min-h-362 bg-background flex items-center justify-center p-6">
+      <div className="min-h-220 bg-background flex items-center justify-center p-6">
         <PreLoader message={t('shop.sync_message', 'Sincronizando Con el Sistema...')} />
       </div>
     );
@@ -162,18 +170,18 @@ const ShopPanel = () => {
     <div ref={shopTopRef} className="flex flex-col gap-8 animate-fade-in-up mx-auto w-full max-w-[1240px]">
       <div className="system-panel rounded-2xl p-4 md:p-6 bg-zinc-950/80 border border-zinc-800/60 backdrop-blur-md">
         
-        {/* Cabecera */}
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-zinc-800 pb-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-system-glow/10 rounded-xl border border-system-glow/20 shadow-[0_0_20px_rgba(0,229,255,0.1)]">
               <ShoppingBag className="w-6 h-6 md:w-8 md:h-8 text-system-glow animate-pulse" />
             </div>
             <div>
-              <h2 className="text-2xl md:text-3xl font-mono font-bold text-system-glow uppercase tracking-[0.25em]">{t('shop.title', 'Store Records')}</h2>
+              <h2 className="text-2xl md:text-3xl font-mono font-bold system-text uppercase tracking-[0.25em]">{t('shop.title', 'Store Records')}</h2>
               <p className="text-[10px] md:text-xs text-zinc-500 font-mono uppercase tracking-[0.3em] mt-1">{t('shop.subtitle', 'Official Purchase System')}</p>
             </div>
           </div>
-          <div className="flex items-center justify-between md:justify-end gap-5 bg-zinc-900/60 px-6 py-4 rounded-2xl border border-zinc-800 shadow-inner min-w-[240px]">
+          <div className="flex items-center justify-between md:justify-end gap-5 bg-zinc-900/60 px-6 py-4 rounded-2xl border border-zinc-800 hover:border-system-gold/40 shadow-inner min-w-[240px]">
             <span className="text-[10px] md:text-xs text-zinc-400 font-mono font-bold uppercase tracking-wider">{t('shop.balance', 'Gold Balance')}</span>
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-system-gold" />
@@ -184,9 +192,9 @@ const ShopPanel = () => {
           </div>
         </div>
 
-        {/* Filtros */}
+
         <div className="flex gap-3 mb-8 overflow-x-auto pb-2 custom-scrollbar">
-          {[ { id: 'all', icon: LayoutGrid }, { id: 'weapon', icon: Sword }, { id: 'armor', icon: Shield }, { id: 'accessory', icon: Gem } ].map(({ id, icon: Icon }) => (
+          {[ { id: 'all', icon: LayoutGrid }, { id: 'weapon', icon: Sword }, { id: 'armor', icon: Shield }, { id: 'accessory', icon: Gem }, { id: 'potion', icon: FlaskConical } ].map(({ id, icon: Icon }) => (
             <button
               key={id}
               onClick={() => { setFilter(id as FilterOption); handlePageChange(1); }}
@@ -198,7 +206,7 @@ const ShopPanel = () => {
           ))}
         </div>
 
-        {/* Grid de Items Paginados */}
+
         <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
           {paginatedItems.map(item => {
             const canAfford = (profile?.gold || 0) >= item.price;
@@ -214,7 +222,10 @@ const ShopPanel = () => {
                   <div className="flex items-start gap-4 min-w-0">
                     <div className="flex flex-col items-center gap-2 shrink-0 w-16">
                       <div className={`w-16 h-16 rounded-lg border flex items-center justify-center bg-zinc-950 shadow-inner transition-colors ${rStyle.slotBorder} ${rStyle.slotBg}`}>
-                        <ShopItemIcon type={item.type} className={`w-8 h-8 ${rStyle.iconColor}`} />
+                        
+
+                        <ShopItemIcon imageKey={item.image_key} type={item.type} className={`w-8 h-8 ${rStyle.iconColor}`} />
+                        
                       </div>
                       <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border tracking-wider uppercase whitespace-nowrap ${rStyle.badge}`}>
                         {t(`rarities.${item.rarity.toUpperCase()}`, item.rarity)}
@@ -261,7 +272,7 @@ const ShopPanel = () => {
                     <>
                       <ShoppingCart className="w-5 h-5 transition-transform duration-300 group-hover:drop-shadow-[0_0_12px_rgba(255,215,0,0.8)] group-hover:scale-120" />
                       <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-0.5 transition-all duration-300">
-                        <span className="text-[12px] opacity-80 tracking-widest transition-all duration-300 group-hover:drop-shadow-[0_0_12px_rgba(255,215,0,0.8)] group-hover:scale-120">BUY</span>
+                        <span className="text-[12px] opacity-80 tracking-widest transition-all duration-300 group-hover:drop-shadow-[0_0_12px_rgba(255,215,0,0.8)] group-hover:scale-120">{t('shop.buy', 'BUY')}</span>
                         <span className="text-sm font-bold tracking-wide text-system-gold transition-all duration-300 group-hover:drop-shadow-[0_0_12px_rgba(255,215,0,0.8)] group-hover:scale-120">
                           {item.price.toLocaleString()} G
                         </span>
@@ -274,14 +285,14 @@ const ShopPanel = () => {
           })}
         </div>
 
-        {/* Sin Items */}
+
         {filteredItems.length === 0 && (
           <div className="text-center py-12 border border-dashed border-zinc-800 rounded-xl bg-black/10 mt-6">
             <p className="text-sm font-mono text-zinc-500 uppercase tracking-widest">{t('shop.no_items', '[No available items in this system branch]')}</p>
           </div>
         )}
 
-        {/* --- CONTROLES DE PAGINACIÓN TÁCTICA --- */}
+
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-4 mt-8 pt-4 border-t border-t-zinc-900/60 font-mono">
             <button

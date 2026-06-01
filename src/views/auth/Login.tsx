@@ -1,9 +1,8 @@
 import axios from 'axios';
-import { t } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { Swords, Eye, EyeOff, ShieldAlert, User, Mail, Lock, CheckCircle2, XCircle } from 'lucide-react';
-// 1. Importamos Framer Motion
 import { motion, AnimatePresence } from 'framer-motion';
 import { authService } from '../../services/AuthService';
 import Preloader from '../../components/common/Preloader';
@@ -41,7 +40,6 @@ const ErrorMensaje = ({ mensaje, visible }: { mensaje?: string; visible: boolean
   );
 };
 
-// Variantes de animación para el efecto "Ventana del Sistema"
 const formVariants = {
   hidden: { opacity: 0, x: 20, filter: 'blur(4px)' },
   visible: { opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 0.3, ease: 'easeOut' } },
@@ -49,6 +47,7 @@ const formVariants = {
 } as const;
 
 const Login = () => {
+  const { t } = useTranslation();
   const [errores, setErrores] = useState<ErroresValidacion>({});
   const [identifier, setIdentifier] = useState<string>('');
   const [username, setUsername] = useState<string>('');
@@ -58,7 +57,7 @@ const Login = () => {
   const [loadingSource, setLoadingSource] = useState<"email" | "google" | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showSystem, setShowSystem] = useState<boolean>(false);
-  const [mensajeAutoLogin, setMensajeAutoLogin] = useState<string>("Iniciando secuencia de acceso...");
+  const [mensajeAutoLogin, setMensajeAutoLogin] = useState<string>(t('auth.loading_auth'));
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
   const [partículasFondo] = useState(crearParticulas);
   
@@ -89,7 +88,7 @@ const Login = () => {
           navigate('/Selection', { replace: true, state: { skipCheck: true } });
           return;
         }
-        setMensajeAutoLogin("Sincronizando datos con el Sistema...");
+        setMensajeAutoLogin(t('auth.loading_sync'));
         await new Promise(resolve => setTimeout(resolve, 500));
         navigate('/Game/Status', { replace: true, state: { skipCheck: true } });
       } else {
@@ -97,23 +96,23 @@ const Login = () => {
       }
     };
     checkAuth();
-  }, [navigate]);
+  }, [navigate, t]);
 
   const validarFormulario = () => {
     const nuevosErrores: ErroresValidacion = {};
 
     if (!identifier.trim()) {
-      nuevosErrores.identifier = 'El campo no puede estar vacío.';
+      nuevosErrores.identifier = t('auth.error_empty_field');
     } else if (isSignUp && !emailRegex.test(identifier)) {
-      nuevosErrores.identifier = 'El formato del Email clasificado no es válido.';
+      nuevosErrores.identifier = t('auth.error_invalid_email_format');
     }
 
     if (isSignUp && username.trim().length < 3) {
-      nuevosErrores.username = 'El Nickname debe tener al menos 3 caracteres.';
+      nuevosErrores.username = t('auth.error_username_short');
     }
 
     if (!passwordValido) {
-      nuevosErrores.password = 'La clave de acceso no cumple los requisitos.';
+      nuevosErrores.password = t('auth.error_password_invalid');
     }
 
     setErrores(nuevosErrores);
@@ -144,9 +143,9 @@ const Login = () => {
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const errorCode = err.response?.data?.mensaje || err.response?.data?.detail;
-        setError(t(`backend_errors.${errorCode}`) || "Error de conexión con el Sistema.");
+        setError(t(`backend_errors.${errorCode}`) || t('auth.error_connection'));
       } else {
-        setError("Ocurrió un error inesperado.");
+        setError(t('auth.error_unexpected'));
       }
       setLoadingSource(null);
     }
@@ -169,7 +168,7 @@ const Login = () => {
   if (loadingSource) {
     return (
       <div className="min-h-svh bg-background flex items-center justify-center p-6">
-        <Preloader message="Verificando Identidad del Cazador..." />
+        <Preloader message={t('auth.loading_identity')} />
       </div>
     );
   }
@@ -177,7 +176,6 @@ const Login = () => {
   return (
     <div className="min-h-svh w-full flex items-center justify-center bg-background relative overflow-y-hidden font-sans select-none px-4 py-8 md:py-12">
       
-      {/* Partículas de fondo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {partículasFondo.map((p) => (
           <div
@@ -194,18 +192,15 @@ const Login = () => {
         ))}
       </div>
 
-      {/* Efecto Línea de Escaneo */}
       <div className="absolute inset-0 pointer-events-none opacity-30">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-system-glow/30 to-transparent h-40 animate-scan-line" />
       </div>
 
-      {/* 2. Convertimos el contenedor en un motion.div con la directiva 'layout' */}
       <motion.div 
         layout
         className={`relative z-10 w-full max-w-md lg:max-w-xl mx-auto transition-all duration-700 ${showSystem ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
       >
         
-        {/* Esquinas estéticas */}
         <div className="absolute -top-1 -left-1 w-4 h-4 md:w-6 md:h-6 border-t-2 border-l-2 border-system-glow z-20" />
         <div className="absolute -top-1 -right-1 w-4 h-4 md:w-6 md:h-6 border-t-2 border-r-2 border-system-glow z-20" />
         <div className="absolute -bottom-1 -left-1 w-4 h-4 md:w-6 md:h-6 border-b-2 border-l-2 border-system-glow z-20" />
@@ -217,7 +212,6 @@ const Login = () => {
           <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-2 md:gap-4 mb-2">
               <Swords className="w-6 h-6 md:w-8 md:h-8 shrink-0 text-system-glow animate-float" />
-              {/* Añadimos animaciones breves al cambiar el texto de la cabecera */}
               <AnimatePresence mode="wait">
                 <motion.h1 
                   key={isSignUp ? 'reg-title' : 'login-title'}
@@ -227,7 +221,7 @@ const Login = () => {
                   transition={{ duration: 0.2 }}
                   className="text-2xl sm:text-3xl md:text-5xl font-mono font-black tracking-widest system-text text-glow-strong break-words"
                 >
-                  {isSignUp ? 'REGISTER' : 'LOGIN'}
+                  {isSignUp ? t('auth.register') : t('auth.login')}
                 </motion.h1>
               </AnimatePresence>
               <Swords className="w-6 h-6 md:w-8 md:h-8 shrink-0 text-system-glow animate-float" />
@@ -243,12 +237,11 @@ const Login = () => {
                 transition={{ duration: 0.2 }}
                 className="text-muted-foreground font-mono text-[10px] sm:text-xs md:text-sm tracking-wider uppercase font-semibold px-2 balance"
               >
-                {isSignUp ? '↳ [You have been chosen as a Player]' : '↳ [Welcome back, Hunter. The System awaits your command]'}
+                {isSignUp ? t('auth.register_description') : t('auth.login_description')}
               </motion.p>
             </AnimatePresence>
           </div>
 
-          {/* 3. Envolvemos el contenido cambiante del formulario en AnimatePresence */}
           <AnimatePresence mode="wait">
             <motion.form 
               key={isSignUp ? 'register-form' : 'login-form'}
@@ -261,7 +254,6 @@ const Login = () => {
               noValidate
             >
 
-              {/* Alerta de Error del Sistema (FastAPI) */}
               {error && (
                 <div className="text-xs md:text-sm text-red-400 bg-red-950/50 border-l-4 border-system-red p-3 font-data rounded flex items-start gap-3 shadow-md">
                   <ShieldAlert className="w-5 h-5 shrink-0 text-system-red mt-0.5" />
@@ -271,11 +263,10 @@ const Login = () => {
                 </div>
               )}
 
-              {/* CAMPO NICKNAME (Solo en Registro) */}
               {isSignUp && (
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="username" className="text-[11px] md:text-xs font-mono font-bold text-system-glow tracking-wider uppercase flex items-center gap-2">
-                    <User className="w-3.5 h-3.5 shrink-0" /> Player Nickname
+                    <User className="w-3.5 h-3.5 shrink-0" /> {t('auth.label_username')}
                   </label>
                   <div className="relative">
                     <input
@@ -293,22 +284,20 @@ const Login = () => {
                           ? 'border-system-red focus:border-system-red focus:ring-system-red/30' 
                           : 'border-system-glow/30 focus:border-system-glow focus:ring-system-glow/30'
                       }`}
-                      placeholder="e.g., SungJinWoo"
+                      placeholder={t('auth.label_username')}
                     />
                   </div>
                   <ErrorMensaje mensaje={errores.username} visible={formEnviado && !!errores.username} />
                 </div>
               )}
 
-              {/* CAMPO IDENTIFICADOR (Email / Nickname) */}
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="identifier" className="text-[11px] md:text-xs font-mono font-bold text-system-glow tracking-wider uppercase flex items-center gap-2">
-                  <Mail className="w-3.5 h-3.5 shrink-0" /> {isSignUp ? 'Classified Email' : 'Hunter Identity (Email / Nickname)'}
+                  <Mail className="w-3.5 h-3.5 shrink-0" /> {isSignUp ? t('auth.label_access_key') : t('auth.label_identifier')}
                 </label>
                 <input
                   type={isSignUp ? "email" : "text"}
                   id="identifier"
-                  // autoComplete="off"
                   value={identifier}
                   onChange={(e) => {
                     setIdentifier(e.target.value);
@@ -320,15 +309,14 @@ const Login = () => {
                       ? 'border-system-red focus:border-system-red focus:ring-system-red/30' 
                       : 'border-system-glow/30 focus:border-system-glow focus:ring-system-glow/30'
                   }`}
-                  placeholder={isSignUp ? "hunter@system.com" : "Enter your credentials..."}
+                  placeholder={isSignUp ? "hunter@system.com" : t('auth.placeholder_credentials')}
                 />
                 <ErrorMensaje mensaje={errores.identifier} visible={formEnviado && !!errores.identifier} />
               </div>
 
-              {/* CAMPO CONTRASEÑA */}
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="password" className="text-[11px] md:text-xs font-mono font-bold text-system-glow tracking-wider uppercase flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 shrink-0" /> Access Key
+                  <Lock className="w-3.5 h-3.5 shrink-0" /> {t('auth.label_access_key')}
                 </label>
                 <div className="relative">
                   <input
@@ -346,13 +334,13 @@ const Login = () => {
                         ? 'border-system-red focus:border-system-red focus:ring-system-red/30' 
                         : 'border-system-glow/30 focus:border-system-glow focus:ring-system-glow/30'
                     }`}
-                    placeholder="••••••••"
+                    placeholder={t('auth.label_access_key')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(prev => !prev)}
                     className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-system-glow transition-colors p-1"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? t('auth.hide_password') : t('auth.show_password')}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -360,36 +348,33 @@ const Login = () => {
 
                 <ErrorMensaje mensaje={errores.password} visible={formEnviado && !!errores.password} />
 
-                {/* REQUISITOS DE CONTRASEÑA EN TIEMPO REAL */}
                 <div className="mt-1 bg-muted/30 border border-border/60 rounded-lg p-2.5 md:p-3 grid grid-cols-1 sm:grid-cols-3 gap-2 font-data font-bold text-[11px] md:text-xs select-none">
                   <div className={`flex items-center gap-1.5 transition-all duration-300 ${obtenerClaseRequisito(tieneOchoCaracteres)}`}>
                     {tieneOchoCaracteres ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-system-green" /> : <XCircle className={`w-3.5 h-3.5 shrink-0 ${formEnviado ? 'text-system-red' : 'text-muted-foreground/60'}`} />}
-                    <span>Min. 8 chars</span>
+                    <span>{t('auth.password_requirement_length')}</span>
                   </div>
                   <div className={`flex items-center gap-1.5 transition-all duration-300 ${obtenerClaseRequisito(tieneMayuscula)}`}>
                     {tieneMayuscula ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-system-green" /> : <XCircle className={`w-3.5 h-3.5 shrink-0 ${formEnviado ? 'text-system-red' : 'text-muted-foreground/60'}`} />}
-                    <span>1 Uppercase</span>
+                    <span>{t('auth.password_requirement_uppercase')}</span>
                   </div>
                   <div className={`flex items-center gap-1.5 transition-all duration-300 ${obtenerClaseRequisito(tieneNumero)}`}>
                     {tieneNumero ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-system-green" /> : <XCircle className={`w-3.5 h-3.5 shrink-0 ${formEnviado ? 'text-system-red' : 'text-muted-foreground/60'}`} />}
-                    <span>1 Number</span>
+                    <span>{t('auth.password_requirement_number')}</span>
                   </div>
                 </div>
               </div>
 
-              {/* BOTÓN SUBMIT */}
               <button 
                 type="submit" 
                 disabled={loadingSource !== null} 
                 className="w-full mt-2 py-2.5 md:py-3 rounded font-mono font-black text-base md:text-lg tracking-widest bg-gradient-to-r from-system-glow/10 to-system-glow/20 border border-system-glow/60 text-system-glow hover:from-system-glow/20 hover:to-system-glow/30 hover:border-system-glow text-glow-strong shadow-[0_0_15px_rgba(0,242,255,0.1)] hover:shadow-[0_0_25px_rgba(0,242,255,0.25)] transition-all cursor-pointer active:scale-[0.99] disabled:opacity-40"
               >
-                {loadingSource === 'email' ? 'CONNECTING...' : (isSignUp ? 'REGISTER' : 'ARISE')}
+                {loadingSource === 'email' ? t('auth.loading_identity') : (isSignUp ? t('auth.register') : t('auth.button_arise'))}
               </button>
 
             </motion.form>
           </AnimatePresence>
 
-          {/* Selector de modo inferior */}
           <div className="mt-6 text-center border-t border-system-glow/10 pt-4">
             <button 
               type="button"
@@ -416,8 +401,8 @@ const Login = () => {
               className="text-muted-foreground hover:text-system-glow font-mono text-xs md:text-sm transition-colors uppercase tracking-wider cursor-pointer p-2 hover:underline decoration-system-glow font-semibold inline-block max-w-full break-words"
             >
               {isSignUp 
-                ? '¿Already a player? ➔ [Inicia sesión]' 
-                : '¿No player detected? ➔ [Regístrate]'}
+                ? t('auth.button_toggle_login') 
+                : t('auth.button_toggle_register')}
             </button>
           </div>
 

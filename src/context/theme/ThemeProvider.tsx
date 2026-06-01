@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ThemeContext, type Theme } from './ThemeContext'; // Importamos el contexto desde el otro archivo
+import { ThemeContext, type Theme } from './ThemeContext'; 
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('app-theme');
-    // Validación: Si el valor en localStorage no es 'blue' o 'purple', devolvemos 'blue'
+    
     return (savedTheme === 'blue' || savedTheme === 'purple') ? savedTheme : 'blue';
   });
 
@@ -12,7 +12,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     setTheme((prev) => (prev === 'blue' ? 'purple' : 'blue'));
   };
 
-  // 1. Efecto para aplicar clases al DOM y guardar en localStorage
+  
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('theme-blue', 'theme-purple');
@@ -20,7 +20,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('app-theme', theme);
   }, [theme]);
 
-  // 2. Efecto para escuchar cambios externos (otras pestañas/devtools)
+  
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'app-theme') {
@@ -28,7 +28,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         if (newValue === 'blue' || newValue === 'purple') {
           setTheme(newValue);
         } else {
-          setTheme('blue'); // Valor por defecto ante corrupción de datos
+          setTheme('blue'); 
         }
       }
     };

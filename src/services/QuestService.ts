@@ -1,12 +1,14 @@
 import apiClient from "../api/ApiClient";
+import type { TranslatedText } from "../types/TranslationsTypes";
 
-// 1. Define la estructura de los items de recompensa
+
 export interface RewardItem {
   item_id: number;
   quantity: number;
+  name: TranslatedText;
 }
 
-// 2. Definimos la interfaz para tener tipado fuerte en React
+
 export interface Mission {
   instance_id: number;
   mission_id: number;
@@ -15,8 +17,8 @@ export interface Mission {
   started_at: string;
   completed_at: string | null;
   
-  // Datos del catálogo (ya aplanados)
-  title: { [key: string]: string }; // Soporta {"es": "...", "en": "..."}
+
+  title: { [key: string]: string };
   description: { [key: string]: string };
   mission_type: 'daily' | 'story' | 'achievement' | 'emergency' | 'penalty';
   target_type: 'kill' | 'stat_reach' | 'complete_dungeon' | 'training' | 'dle_guess';
@@ -26,7 +28,7 @@ export interface Mission {
   reward_items: RewardItem[] | null;
 }
 
-// Define lo que devuelve el servidor al actualizar progreso
+
 export interface ProgressUpdateResponse {
   status: string;
   new_progress: number;

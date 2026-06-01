@@ -119,16 +119,16 @@ const TitleSelectorModal = ({ isOpen, onClose, titles, activeTitleId, onSelect, 
     <Dialog open={isOpen} onClose={() => {}} className="relative z-[100]">
       <div className="fixed inset-0 z-[100] flex items-center sm:items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
         
-        {/* CONTENEDOR PRINCIPAL: Max-h adaptativo para que nunca se corte en móviles */}
-        <DialogPanel className="relative w-full max-w-xl bg-background border border-system-glow/30 shadow-[0_0_40px_rgba(0,242,255,0.15)] sm:shadow-[0_0_60px_rgba(0,242,255,0.2)] flex flex-col rounded-t-xl sm:rounded-xl animate-fade-in-up overflow-hidden max-h-[92vh] sm:max-h-[85vh]">
+        
+        <DialogPanel className="relative w-full max-w-xl system-panel border-system-glow/30 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col rounded-t-xl sm:rounded-xl animate-fade-in-up overflow-hidden max-h-[92vh] sm:max-h-[85vh]">
 
-          {/* MARCADORES HUD EN ESQUINAS */}
+        
           <div className="absolute top-0 left-0 w-4 h-4 sm:w-6 sm:h-6 border-t-2 border-l-2 border-system-glow z-20 pointer-events-none" />
           <div className="absolute top-0 right-0 w-4 h-4 sm:w-6 sm:h-6 border-t-2 border-r-2 border-system-glow z-20 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-4 h-4 sm:w-6 sm:h-6 border-b-2 border-l-2 border-system-glow z-20 pointer-events-none" />
           <div className="absolute bottom-0 right-0 w-4 h-4 sm:w-6 sm:h-6 border-b-2 border-r-2 border-system-glow z-20 pointer-events-none" />
           
-          {/* CABECERA DEL MODAL: Padding y textos fluidos */}
+        
           <div className="sticky top-0 z-20 p-4 sm:p-6 border-b border-system-glow/15 bg-background/95 backdrop-blur-xl flex justify-between items-center gap-2">
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <div className="relative flex items-center justify-center shrink-0">
@@ -152,7 +152,7 @@ const TitleSelectorModal = ({ isOpen, onClose, titles, activeTitleId, onSelect, 
             </button>
           </div>
 
-          {/* CONTENEDOR DE TÍTULOS DINÁMICOS */}
+        
           <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-3 max-h-[50vh] sm:max-h-[62vh] relative bg-background">
             
             {!errorMessege && sortedTitles.length === 0 && (
@@ -195,7 +195,7 @@ const TitleSelectorModal = ({ isOpen, onClose, titles, activeTitleId, onSelect, 
                     ${isActive ? theme.laserBg : `bg-transparent ${theme.laserHover}`}`} 
                   />
 
-                  {/* FILA SUPERIOR DEL ELEMENTO: Adaptable flex-row o flex-col en pantallas ultra pequeñas */}
+        
                   <div className="flex justify-between items-start sm:items-center gap-2 mb-1.5 relative w-full z-10">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       {isLocked ? (
@@ -211,7 +211,7 @@ const TitleSelectorModal = ({ isOpen, onClose, titles, activeTitleId, onSelect, 
                       </span>
                     </div>
                     
-                    {/* Badges con padding responsivo */}
+        
                     <div className="font-mono text-[10px] sm:text-xs uppercase tracking-normal shrink-0">
                       {isActive ? (
                         <div className={`flex items-center gap-1 sm:gap-2 border px-2 py-0.5 sm:py-1 rounded ${theme.badgeBg}`}>
@@ -230,13 +230,13 @@ const TitleSelectorModal = ({ isOpen, onClose, titles, activeTitleId, onSelect, 
                     </div>
                   </div>
 
-                  {/* DESCRIPCIÓN */}
+        
                   <p className={`text-xs sm:text-sm mb-2 sm:mb-2.5 leading-relaxed font-sans transition-colors max-w-[98%]
                     ${isActive ? 'text-white' : isLocked ? 'text-red-400/40' : 'text-muted-foreground group-hover:text-foreground'}`}>
                     {title.description[currentLang] || title.description['en']}
                   </p>
 
-                  {/* SECCIÓN DEL BUFF ADQUIRIDO */}
+        
                   <div className={`
                     flex items-center gap-2 text-[11px] sm:text-xs font-mono border w-full transition-all rounded px-2.5 py-1.5
                     ${isActive 
@@ -264,10 +264,10 @@ const TitleSelectorModal = ({ isOpen, onClose, titles, activeTitleId, onSelect, 
             })}
           </div>
 
-          {/* FOOTER GENERAL - COMPACTO, SEGURO Y TOTALMENTE RESPONSIVE */}
+        
           <div className="sticky bottom-0 z-20 p-4 bg-background/95 border-t border-system-glow/15 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-6 backdrop-blur-md font-mono select-none">
             
-            {/* SECCIÓN PROGRESO (Izquierda en desktop, arriba en móvil) */}
+        
             <div className="flex items-center gap-2.5 sm:gap-3 flex-1">
               <span className="text-[10px] sm:text-[10.5px] text-muted-foreground uppercase tracking-[0.12em] sm:tracking-[0.15em] font-bold shrink-0">
                 {t('titulos.tasa_coleccion')}
@@ -285,7 +285,7 @@ const TitleSelectorModal = ({ isOpen, onClose, titles, activeTitleId, onSelect, 
               </span>
             </div>
             
-            {/* SECCIÓN ESTADO (Derecha en desktop, abajo centrado/derecha en móvil) */}
+        
             <div className="shrink-0 flex items-center justify-end min-w-0 sm:min-w-[140px]">
               {isPending ? (
                 <div className="w-full sm:w-auto flex items-center justify-center gap-2 text-system-glow font-black uppercase tracking-wider text-[10px] sm:text-[10.5px] bg-system-glow/10 border border-system-glow/30 px-2.5 py-1 rounded animate-pulse">

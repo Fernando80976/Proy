@@ -1,16 +1,16 @@
 import apiClient from "../api/ApiClient";
 
-// Interfaces para que React Query "sepa" qué recibe
+
 export interface AuthResponse {
-  status: string;      // "success" o "error"
-  mensaje: string;     // Nuestro nuevo estándar
+  status: string;      
+  mensaje: string;     
   username?: string;
-  endpoint?: string;   // Por si quieres usarlo en el front
+  endpoint?: string;   
 }
 
 export interface LoginData {
   identifier: string;
-  password?: string; // Opcional si usas otros métodos
+  password?: string; 
 }
 
 export interface RegisterData {
@@ -19,9 +19,9 @@ export interface RegisterData {
   password?: string;
 }
 
-// Exportamos un objeto con las funciones
+
 export const authService = {
-  // Optimizamos devolviendo directamente response.data
+  
   login: async (data: LoginData): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>("/auth/login", data);
     return response.data; 

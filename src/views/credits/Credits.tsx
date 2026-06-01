@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Swords, Brain, Database, Layers } from 'lucide-react';
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 
-// Interfaz para tipar los enlaces sociales
+
 interface SocialLinks {
   github: string;
   linkedin: string;
 }
 
-// Interfaz para estructurar las habilidades conceptuales simulando las barras de Stats de StatusWindow
+
 interface DeveloperStat {
   label: string;
   value: number;
@@ -19,7 +19,7 @@ interface DeveloperStat {
   barColor: string;
 }
 
-// Interfaz principal para el objeto del Desarrollador
+
 interface Developer {
   name: string;
   role: string;
@@ -30,7 +30,7 @@ interface Developer {
   stats: DeveloperStat[];
 }
 
-// Función idéntica a tu Login para generar partículas en posiciones aleatorias
+
 const crearParticulasCreditos = () => {
   return Array.from({ length: 40 }).map((_, i) => ({
     id: i,
@@ -45,9 +45,9 @@ const CreditsPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   
-  // Estado para controlar la entrada animada del Sistema de manera síncrona con el Login
+
   const [showSystem, setShowSystem] = useState<boolean>(false);
-  // Almacenamos las partículas en el estado para evitar re-renders aleatorios innecesarios
+
   const [particulasFondo] = useState(crearParticulasCreditos);
 
   useEffect(() => {
@@ -55,13 +55,13 @@ const CreditsPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Datos de los Cazadores Desarrolladores (Manuel y Fer)
+
   const developers: Developer[] = [
     {
       name: "Manuel Velásquez",
       role: t('creditos.roles.frontend', 'FRONTEND DEVELOPER & DB ARCHITECT'),
       description: t('creditos.descripciones.manuel', 'Creador del Sistema. Encargado de forjar una interfaz de usuario interactiva, inmersiva y estructurar los núcleos de datos relacionales en Supabase.'),
-      avatar: "https://github.com/Barsa1205.png", // Tu avatar real de GitHub
+      avatar: "https://github.com/Barsa1205.png", 
       rank: "S-RANK",
       social: {
         github: "https://github.com/Barsa1205",
@@ -77,7 +77,7 @@ const CreditsPage: React.FC = () => {
       name: "Fernando Basanta",
       role: t('creditos.roles.backend', 'BACKEND DEVELOPER & MASTER OF LOGIC'),
       description: t('creditos.descripciones.fernando', 'Arquitecto de las sombras. Encargado de sincronizar la lógica de las salas de juego por turnos con FastAPI y gestionar las conexiones WebSocket en tiempo real.'),
-      avatar: "https://github.com/Fernando80976.png", // Avatar de tu compañero Fer
+      avatar: "https://github.com/Fernando80976.png",
       rank: "S-RANK",
       social: {
         github: "https://github.com/Fernando80976",
@@ -94,7 +94,7 @@ const CreditsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden font-sans p-6 md:p-10 select-none">
       
-      {/* 1. SISTEMA DE PARTÍCULAS DEL FONDO */}
+      
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {particulasFondo.map((p) => (
           <div
@@ -110,12 +110,12 @@ const CreditsPage: React.FC = () => {
         ))}
       </div>
 
-      {/* 2. EFECTO SCAN-LINE */}
+      
       <div className="absolute inset-0 pointer-events-none opacity-30">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-system-glow/20 to-transparent h-40 animate-scan-line" />
       </div>
 
-      {/* 3. MEJORA VISUAL DEL FONDO: Runas/Marcas de agua legibles y cinemáticas */}
+      
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-12 opacity-5 font-mono text-xs md:text-sm tracking-widest text-system-glow select-none">
         <div className="flex justify-between w-full">
           <span>[SYSTEM_CREATION_LOG: SUCCESS]</span>
@@ -130,10 +130,10 @@ const CreditsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* CONTENIDO PRINCIPAL */}
+      
       <div className={`relative z-10 w-full max-w-6xl mx-auto flex flex-col items-center transition-all duration-1000 ${showSystem ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         
-        {/* Cabecera de Créditos - Escalada y con mejor visibilidad */}
+      
         <div className="text-center mb-16 flex flex-col items-center">
           <div className="flex items-center justify-center gap-4 mb-4">
             <Swords className="w-10 h-10 text-system-glow animate-float" />
@@ -147,21 +147,21 @@ const CreditsPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Rejilla de Paneles de Desarrolladores - Tarjetas más robustas */}
+      
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full px-4">
           {developers.map((dev, index) => (
             <div 
               key={index} 
               className="system-panel rounded-2xl p-8 md:p-10 relative group bg-background/70 backdrop-blur-md transition-all duration-300 hover:border-system-glow/60 hover:shadow-[0_0_30px_rgba(0,229,255,0.1)]"
             >
-              {/* Sello de Rango de Cazador - Más visible */}
+      
               <div className="absolute top-5 right-5 font-mono text-xs tracking-widest px-3 py-1 border border-system-glow/40 text-system-glow bg-system-glow/10 rounded font-bold shadow-[0_0_8px_rgba(0,229,255,0.2)]">
                 {dev.rank}
               </div>
 
               <div className="flex flex-col items-center text-center space-y-6">
                 
-                {/* Avatar circular ampliado y protegido contra distorsiones */}
+      
                 <div className="relative">
                   <div className="absolute inset-0 rounded-full bg-system-glow/30 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <img 
@@ -171,7 +171,7 @@ const CreditsPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Nombres y Roles - Mayor jerarquía */}
+      
                 <div>
                   <h2 className="text-2xl md:text-3xl font-mono font-bold tracking-wide text-foreground group-hover:text-system-glow transition-colors">
                     {dev.name}
@@ -181,23 +181,23 @@ const CreditsPage: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Cuadro de descripción - Legibilidad perfecta (Aumentado a text-sm) */}
+      
                 <p className="text-muted-foreground text-sm font-sans leading-relaxed min-h-[60px] px-4 max-w-md">
                   {dev.description}
                 </p>
 
-                {/* Sección de Atributos de StatusWindow - Barras más altas y fuentes claras */}
+      
                 <div className="w-full space-y-4 pt-4 border-t border-system-glow/20">
                   {dev.stats.map((stat, sIndex) => (
                     <div key={sIndex} className="flex items-center gap-3 w-full text-left">
                       
-                      {/* Etiqueta del Atributo */}
+      
                       <div className={`flex items-center gap-1.5 w-20 text-xs font-mono font-bold ${stat.color} tracking-wider`}>
                         {stat.icon}
                         <span>{stat.label}</span>
                       </div>
 
-                      {/* Contenedor de la Barra Estilo Solo Leveling - Más robusta y alta (h-3) */}
+      
                       <div className="flex-1 h-3 bg-black/50 rounded-md border border-system-glow/20 p-[1.5px] overflow-hidden shadow-inner">
                         <div 
                           className={`h-full rounded-sm transition-all duration-1000 ${stat.barColor}`}
@@ -205,7 +205,7 @@ const CreditsPage: React.FC = () => {
                         />
                       </div>
 
-                      {/* Puntuación Numérica */}
+      
                       <span className="font-mono text-xs font-bold text-foreground w-6 text-right">
                         {stat.value}
                       </span>
@@ -213,7 +213,7 @@ const CreditsPage: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Enlaces Sociales mediante iconos */}
+      
                 <div className="flex gap-5 pt-2 w-full justify-center">
                   <a 
                     href={dev.social.github} 
@@ -240,7 +240,7 @@ const CreditsPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Botón de Regreso al Menú Principal */}
+      
         <button 
           onClick={() => navigate('/')}
           className="mt-16 py-3.5 px-8 rounded-lg bg-background/40 border border-system-glow/30 text-muted-foreground font-mono text-sm tracking-widest hover:text-system-glow hover:border-system-glow hover:bg-system-glow/5 hover:scale-105 hover:shadow-[0_0_15px_rgba(0,229,255,0.15)] transition-all cursor-pointer flex items-center gap-3"

@@ -1,7 +1,7 @@
 import  apiClient  from "../api/ApiClient";
 
 export interface TranslatedText {
-  [key: string]: string; // Por si añades más idiomas en el futuro
+  [key: string]: string;
 }
 
 export interface PlayerProfile {
@@ -22,11 +22,47 @@ export interface PlayerProfile {
   fatigue_max: number;
   stat_points: number;
   skill_points: number;
+  
+  
   strength: number;
   agility: number;
   vitality: number;
   intelligence: number;
-  sense: number;
+  sense: number; 
+  
+  
+  base_strength: number;
+  bonus_strength: number;
+  title_bonus_strength: number;
+  class_bonus_strength: number;
+
+  base_agility: number;
+  bonus_agility: number;
+  title_bonus_agility: number;
+  class_bonus_agility: number;
+
+  base_vitality: number;
+  bonus_vitality: number;
+  title_bonus_vitality: number;
+  class_bonus_vitality: number;
+
+  base_intelligence: number;
+  bonus_intelligence: number;
+  title_bonus_intelligence: number;
+  class_bonus_intelligence: number;
+
+  base_sense: number;
+  bonus_sense: number;
+  title_bonus_sense: number;
+  class_bonus_sense: number;
+
+  
+  base_hp_max: number;
+  bonus_hp_max: number;
+  base_mp_max: number;
+  bonus_mp_max: number;
+
+  has_completed_tutorial: boolean;
   updated_at: string;
 }
 
@@ -39,7 +75,7 @@ export interface Title {
   effect: number;      
   min_level_required: number;       
   created_at: string;
-  is_unlocked: boolean; // <--- Nuevo campo detectado desde el Back
+  is_unlocked: boolean;
 }
 
 export const hunterService = {
@@ -55,15 +91,20 @@ export const hunterService = {
     return response.data;
   },
 
-// Ahora devuelve todos los títulos (bloqueados y desbloqueados)
+
   getAllTitles: async (): Promise<Title[]> => {
     const response = await apiClient.get<Title[]>("/hunter/titles");
     return response.data;
   },
 
   updateActiveTitle: async (titleId: number) => {
-    // Usamos PATCH porque solo modificamos una propiedad del perfil
+
     const response = await apiClient.patch("/hunter/active-title", { title_id: titleId });
+    return response.data;
+  },
+
+  markTutorialComplete: async () => {
+    const response = await apiClient.patch("/hunter/tutorial-complete");
     return response.data;
   }
 

@@ -4,11 +4,12 @@ import DleService, {
   type AttributeComparison,
   type SavedAttempt 
 } from '../../services/DleService';
-import { Ban, Check, ArrowUp, ArrowDown, Loader2, Target, Search } from 'lucide-react';
+import { Ban, Check, ArrowUp, ArrowDown, Loader2, Target, Search, Fingerprint } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { getAssetUrl } from '../../utils/Assets';
+import { useAsset } from '../../hook/useAsset';
+import { useTranslation } from 'react-i18next';
 
-// Interfaz actualizada para reflejar que ahora recibimos strings
+
 export interface DleAttemptUI {
   name: string;
   image_key: string;
@@ -23,7 +24,10 @@ interface DleModalProps {
   onClose: () => void;
 }
 
+
 const DleModal: React.FC<DleModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
+  const getAssetUrl = useAsset();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -49,14 +53,12 @@ const DleModal: React.FC<DleModalProps> = ({ isOpen, onClose }) => {
     },
   });
 
-  // Lógica de mapeo de intentos corregida
   const attempts = useMemo(() => {
     if (!dailyStatus?.attempts_history || catalog.length === 0) return [];
     
     return dailyStatus.attempts_history.map((att: SavedAttempt) => {
       const char = catalog.find(c => c.id === att.character_id);
       return {
-        // Usamos name_data que viene del catálogo (ahora es string)
         name: char?.name_data || "???", 
         image_key: char?.image_key || "unknown",
         ...att.comparison
@@ -66,13 +68,12 @@ const DleModal: React.FC<DleModalProps> = ({ isOpen, onClose }) => {
 
   const isWon = dailyStatus?.is_completed || false;
 
-  // Buscador corregido para usar name_data
   const filteredCharacters = useMemo(() => {
     if (!searchTerm.trim()) return [];
     const term = searchTerm.toLowerCase();
     return catalog
       .filter(char => 
-        char.name_data.toLowerCase().includes(term) && // Cambio a name_data
+        char.name_data.toLowerCase().includes(term) &&
         !attempts.some(att => att.name === char.name_data)
       )
       .slice(0, 5);
@@ -81,71 +82,79 @@ const DleModal: React.FC<DleModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-      <div className="system-panel w-full max-w-4xl h-[75vh] flex flex-col rounded-none border-t-2 border-b-2 relative overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-2 sm:p-4 animate-in fade-in duration-300">
+      <div className="system-panel w-full max-w-5xl h-[95vh] sm:h-[85vh] flex flex-col rounded-sm border border-system-glow/40 relative overflow-hidden shadow-[0_0_30px_rgba(0,242,255,0.1)]">
         
-        {/* HUD Decoration */}
-        <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-system-glow opacity-50 pointer-events-none" />
-        <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-system-glow opacity-50 pointer-events-none" />
         
-        {/* Header */}
-        <div className="p-5 border-b border-system-glow/20 flex justify-between items-center bg-system-glow/5">
-          <div className="flex items-center gap-4">
-            <div className="p-2 bg-system-glow/10 border border-system-glow/30">
-              <Target className="w-6 h-6 system-text animate-pulse" />
+        <div className="absolute top-0 left-0 w-8 h-8 sm:w-16 sm:h-16 border-t-2 border-l-2 border-system-glow opacity-60 pointer-events-none animate-corner-pulse" />
+        <div className="absolute top-0 right-0 w-8 h-8 sm:w-16 sm:h-16 border-t-2 border-r-2 border-system-glow opacity-60 pointer-events-none animate-corner-pulse" />
+        <div className="absolute bottom-0 left-0 w-8 h-8 sm:w-16 sm:h-16 border-b-2 border-l-2 border-system-glow opacity-60 pointer-events-none animate-corner-pulse" />
+        <div className="absolute bottom-0 right-0 w-8 h-8 sm:w-16 sm:h-16 border-b-2 border-r-2 border-system-glow opacity-60 pointer-events-none animate-corner-pulse" />
+        
+        
+        <div className="p-4 sm:p-6 border-b border-system-glow/30 flex justify-between items-start sm:items-center bg-gradient-to-r from-system-glow/10 via-transparent to-transparent relative">
+          <div className="absolute inset-0 bg-scanline opacity-10 pointer-events-none" />
+          <div className="flex items-center gap-3 sm:gap-5 z-10 w-full pr-8 sm:pr-0">
+            <div className="p-2 sm:p-3 bg-black/50 border border-system-glow/50 relative overflow-hidden group shrink-0">
+              <div className="absolute inset-0 bg-system-glow/20 animate-pulse-cyan" />
+              <Target className="w-6 h-6 sm:w-8 sm:h-8 system-text relative z-10" />
             </div>
             <div>
-              <h2 className="font-system text-2xl tracking-widest system-text uppercase leading-none">
-                Misión Diaria: Identificación
+              <h2 className="font-system text-lg sm:text-3xl tracking-[0.1em] sm:tracking-[0.2em] text-monarch uppercase leading-none text-glow-strong">
+                {t('dle.title')}
               </h2>
-              <div className="flex gap-4 mt-1">
-                <span className="font-mono text-[10px] text-system-glow/60 uppercase">Estado: {isWon ? 'Completado' : 'En progreso'}</span>
-                <span className="font-mono text-[10px] text-system-glow/60 uppercase">Intentos: {attempts.length}</span>
+              <div className="flex flex-wrap gap-2 sm:gap-4 mt-2">
+                <span className={`font-mono text-[10px] sm:text-xs uppercase px-2 py-0.5 border ${isWon ? 'border-system-green text-system-green bg-system-green/10' : 'border-system-glow/50 text-system-glow bg-system-glow/10'}`}>
+                  {t('dle.status')}: {isWon ? t('dle.state_confirmed') : t('dle.state_in_progress')}
+                </span>
+                <span className="font-mono text-[10px] sm:text-xs text-system-glow/80 uppercase px-2 py-0.5 border border-system-glow/20">
+                  {t('dle.attempts')}: {attempts.length}
+                </span>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="system-text hover:text-white transition-all text-2xl p-2 hover:bg-system-glow/10">✕</button>
+          <button onClick={onClose} className="system-text hover:text-white transition-all text-xl sm:text-2xl p-1 sm:p-2 hover:bg-system-red/20 hover:border-system-red border border-transparent z-10 absolute right-2 sm:static">✕</button>
         </div>
 
-        {/* Cuerpo del Modal */}
-        <div className="p-6 flex-1 overflow-hidden flex flex-col gap-6">
+        
+        <div className="p-3 sm:p-6 flex-1 overflow-hidden flex flex-col gap-4 sm:gap-6 bg-vignette relative">
+          <div className="absolute inset-0 bg-monarch-gradient opacity-20 pointer-events-none" />
           
-          {/* Buscador de Sistema */}
+        
           {!isWon && (
             <div className="relative z-20">
-              <div className="flex items-center gap-3 bg-system-glow/5 border border-system-glow/20 p-1 rounded-sm focus-within:border-system-glow/60 transition-all">
-                <Search className="w-5 h-5 ml-3 system-text opacity-50" />
+              <div className="flex items-center gap-2 sm:gap-3 bg-black/60 border border-system-glow/30 p-1 sm:p-2 focus-within:border-system-glow focus-within:shadow-[0_0_15px_rgba(0,242,255,0.2)] transition-all relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-system-glow animate-pulse" />
+                <Search className="w-5 h-5 sm:w-6 sm:h-6 ml-2 sm:ml-4 system-text opacity-70 shrink-0" />
                 <input 
                   type="text"
                   value={searchTerm}
                   disabled={mutation.isPending}
-                  placeholder={mutation.isPending ? "ANALIZANDO BASE DE DATOS..." : "ESCANEAR SUJETO..."}
-                  className="w-full bg-transparent p-3 text-white font-data placeholder:text-system-glow/30 focus:outline-none"
+                  placeholder={mutation.isPending ? t('dle.processing') : t('dle.placeholder')}
+                  className="w-full bg-transparent p-2 sm:p-3 text-white font-mono text-sm sm:text-base tracking-wider placeholder:text-system-glow/40 focus:outline-none uppercase"
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               
               {filteredCharacters.length > 0 && (
-                <div className="absolute w-full mt-2 system-panel border-system-glow/40 shadow-2xl animate-in slide-in-from-top-2 bg-black/90">
+                <div className="absolute w-full mt-2 system-panel border border-system-glow/50 shadow-[0_10px_30px_rgba(0,0,0,0.8)] animate-in slide-in-from-top-2 bg-black/95 z-50 max-h-[40vh] overflow-y-auto">
                   {filteredCharacters.map(char => (
                     <button
                       key={char.id}
                       onClick={() => mutation.mutate(char.id)}
-                      className="w-full flex items-center p-3 hover:bg-system-glow/20 border-b border-system-glow/10 last:border-none group transition-all"
+                      className="w-full flex items-center p-2 sm:p-3 hover:bg-system-glow/20 border-b border-system-glow/20 last:border-none group transition-all"
                     >
-                      <div className="w-12 h-12 border border-system-glow/30 overflow-hidden bg-black">
+                      <div className="w-10 h-10 sm:w-14 sm:h-14 border border-system-glow/40 overflow-hidden bg-black relative shrink-0">
+                        <div className="absolute inset-0 bg-system-glow/10 group-hover:bg-transparent transition-colors z-10" />
                          <img 
                             src={getAssetUrl(char.image_key)} 
                             alt={char.name_data} 
                             loading="lazy"
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
-                            onError={(e) => {
-                              e.currentTarget.src = "/default.png"; // Ruta absoluta en public
-                            }}  
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                            onError={(e) => { e.currentTarget.src = getAssetUrl(null); }}
                           />
-                            
                       </div>
-                      <span className="ml-4 font-system text-sm system-text uppercase group-hover:text-white">
+                      <span className="ml-3 sm:ml-5 font-system text-sm sm:text-lg system-text tracking-widest uppercase group-hover:text-white group-hover:text-glow-strong transition-all text-left">
                         {char.name_data}
                       </span>
                     </button>
@@ -155,101 +164,147 @@ const DleModal: React.FC<DleModalProps> = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          {/* Mensaje de Victoria Estilo Sistema */}
+        
           {isWon && (
-            <div className="system-glass border-system-green/50 p-6 text-center animate-pulse-glow">
-              <h3 className="font-system text-3xl text-system-green tracking-tighter">¡OBJETIVO CONFIRMADO!</h3>
-              <p className="font-data text-system-green/70 text-sm mt-2">Los datos del sujeto han sido sincronizados correctamente.</p>
+            <div className="system-glass border-system-green/50 p-4 sm:p-6 text-center animate-pulse-glow relative overflow-hidden shrink-0">
+              <div className="absolute inset-0 bg-system-green opacity-30" />
+              <Fingerprint className="w-8 h-8 sm:w-12 sm:h-12 text-system-green mx-auto mb-2 animate-bounce" />
+              <h3 className="font-system text-2xl sm:text-4xl text-system-green tracking-[0.15em]">{t('dle.confirmed')}</h3>
+              <p className="font-mono text-system-green/80 text-xs sm:text-sm mt-2 sm:mt-3 uppercase tracking-widest">{t('dle.confirmed')}</p>
             </div>
           )}
 
-          {/* Tabla con Scroll Interno Personalizado */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+        
+          <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative z-10">
             {isLoadingStatus ? (
-               <div className="flex flex-col justify-center items-center h-60 gap-4">
-                  <Loader2 className="w-10 h-10 system-text animate-spin" />
-                  <span className="font-system system-text text-sm animate-pulse">Sincronizando con el servidor...</span>
+               <div className="flex flex-col justify-center items-center h-full gap-4 sm:gap-6">
+                  <div className="relative">
+                    <Loader2 className="w-12 h-12 sm:w-16 sm:h-16 system-text animate-spin opacity-50" />
+                    <Target className="w-6 h-6 sm:w-8 sm:h-8 system-text absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                  </div>
+                  <span className="font-mono system-text text-xs sm:text-sm tracking-widest animate-pulse text-center px-4">{t('dle.syncing')}</span>
                </div>
             ) : (
-              <div className="space-y-4">
-                {/* Cabecera de Tabla */}
-                <div className="grid grid-cols-6 gap-3 text-[10px] font-system system-text text-center border-b border-system-glow/20 pb-3">
-                  <div>Sujeto</div>
-                  <div>Raza</div>
-                  <div>Rango</div>
-                  <div>Clase</div>
-                  <div>Afiliación</div>
-                  <div>Match</div>
-                </div>
-
-                {/* Lista de Intentos */}
-                {attempts.map((attempt, index) => (
-                  <div key={index} className="grid grid-cols-6 gap-3 animate-fade-in-up">
-                    <div className="h-24 system-glass border-system-glow/20 flex flex-col items-center justify-center relative overflow-hidden group">
-                        <img 
-                            src={getAssetUrl(attempt.image_key)} 
-                            alt={attempt.name} 
-                            loading="lazy"
-                            className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale group-hover:grayscale-0 transition-all" 
-                            onError={(e) => {
-                              e.currentTarget.src = "/default.png"; // Ruta absoluta en public
-                            }} 
-                          />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-                        <span className="absolute bottom-2 font-data text-[9px] text-white uppercase text-center px-1 leading-tight">{attempt.name}</span>
-                    </div>
-                    
-                    <AttributeCell match={attempt.race} /> 
-                    <AttributeCell match={attempt.rank} />
-                    <AttributeCell match={attempt.class} />
-                    <AttributeCell match={attempt.affiliation} />
-                    
-                    <div className={`h-24 flex items-center justify-center border transition-all duration-700 ${
-                      attempt.race.result === 'correct' && 
-                      attempt.rank.result === 'correct' && 
-                      attempt.class.result === 'correct' && 
-                      attempt.affiliation.result === 'correct' 
-                      ? 'bg-system-green/20 border-system-green shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
-                      : 'bg-system-red/10 border-system-red/30'}`}>
-                        {attempt.race.result === 'correct' && attempt.rank.result === 'correct' && attempt.class.result === 'correct' && attempt.affiliation.result === 'correct' ? 
-                          <Check className="w-10 h-10 text-system-green drop-shadow-[0_0_8px_currentColor]" /> : 
-                          <Ban className="w-8 h-8 text-system-red/40" />
-                        }
-                    </div>
+              <div className="overflow-x-auto pb-4 custom-scrollbar">
+                <div className="min-w-[650px] lg:min-w-0 space-y-3 sm:space-y-4">
+                  
+        
+                  <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] gap-2 sm:gap-3 text-[10px] sm:text-xs font-mono system-text text-center border-b border-system-glow/30 pb-2 sm:pb-3 uppercase tracking-widest px-1 sm:px-2">
+                    <div className="text-left pl-2">{t('dle.subject')}</div>
+                    <div>{t('dle.race')}</div>
+                    <div>{t('dle.rank')}</div>
+                    <div>{t('dle.class')}</div>
+                    <div>{t('dle.affiliation')}</div>
+                    <div>{t('dle.state')}</div>
                   </div>
-                ))}
+
+        
+                  {attempts.map((attempt, index) => {
+                    const isFullMatch = attempt.race.result === 'correct' && attempt.rank.result === 'correct' && attempt.class.result === 'correct' && attempt.affiliation.result === 'correct';
+                    
+                    return (
+                      <div 
+                        key={index} 
+                        className={`grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] gap-2 sm:gap-3 p-1 sm:p-2 border bg-black/40 backdrop-blur-sm animate-slide-in group hover:bg-black/60 transition-all duration-300
+                          ${isFullMatch ? 'border-system-green/50 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'border-system-glow/20 hover:border-system-glow/50'}`}
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
+        
+                        <div className="h-20 sm:h-24 system-glass border border-system-glow/20 flex flex-col relative overflow-hidden group-hover:border-system-glow/50 transition-colors">
+                            <img 
+                                src={getAssetUrl(attempt.image_key)} 
+                                alt={attempt.name} 
+                                loading="lazy"
+                                className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" 
+                                onError={(e) => { e.currentTarget.src = getAssetUrl(null); }}
+                              />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                            <div className="absolute bottom-0 w-full p-1 sm:p-2 border-t border-system-glow/20 bg-black/60 backdrop-blur-md">
+                              <span className="block font-system text-[10px] sm:text-xs text-white uppercase truncate leading-tight">{attempt.name}</span>
+                            </div>
+                        </div>
+                        
+        
+                        <AttributeCell label={t('dle.race')} match={attempt.race} /> 
+                        <AttributeCell label={t('dle.rank')} match={attempt.rank} />
+                        <AttributeCell label={t('dle.class')} match={attempt.class} />
+                        <AttributeCell label={t('dle.affiliation')} match={attempt.affiliation} />
+                        
+        
+                        <div className={`h-20 sm:h-24 flex flex-col items-center justify-center border transition-all duration-700 relative overflow-hidden
+                          ${isFullMatch 
+                          ? 'bg-system-green/10 border-system-green shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]' 
+                          : 'bg-system-red/5 border-system-red/20'}`}>
+                            
+                            {isFullMatch && <div className="absolute inset-0 bg-system-green/20 animate-pulse" />}
+                            
+                            <div className="relative z-10 flex flex-col items-center gap-1 sm:gap-2">
+                              {isFullMatch ? 
+                                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-system-green drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]" /> : 
+                                <Ban className="w-5 h-5 sm:w-6 sm:h-6 text-system-red/50" />
+                              }
+                              <span className={`font-mono text-[8px] sm:text-[9px] uppercase tracking-widest px-1 sm:px-2 py-0.5 sm:py-1 border 
+                                ${isFullMatch ? 'text-system-green border-system-green/50 bg-black/50' : 'text-system-red/50 border-system-red/20'}`}>
+                                {isFullMatch ? t('dle.ok') : t('dle.fail')}
+                              </span>
+                            </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
         </div>
-
       </div>
     </div>,
     document.body
   );
 };
 
-// Celdas estilizadas como pequeñas pantallas de datos
-const AttributeCell = ({ match }: { match: AttributeComparison }) => {
+
+const AttributeCell = ({ label, match }: { label: string, match: AttributeComparison }) => {
   const styles = {
-    correct: 'bg-system-green/60 border-system-green text-white text-glow-strong',
-    incorrect: 'bg-system-red/20 border-system-red/40 text-system-red/70',
-    higher: 'bg-system-gold/40 border-system-gold text-white animate-pulse-glow',
-    lower: 'bg-system-gold/40 border-system-gold text-white animate-pulse-glow',
-    partial: 'bg-system-gold/60 border-system-gold/80 text-black font-bold'
+    correct: 'bg-system-green/20 border-system-green text-system-green shadow-[inset_0_0_15px_rgba(16,185,129,0.1)]',
+    incorrect: 'bg-black/50 border-system-glow/10 text-system-glow/40 grayscale',
+    higher: 'bg-system-gold/10 border-system-gold/50 text-system-gold shadow-[inset_0_0_10px_rgba(250,204,21,0.1)] animate-pulse-glow',
+    lower: 'bg-system-gold/10 border-system-gold/50 text-system-gold shadow-[inset_0_0_10px_rgba(250,204,21,0.1)] animate-pulse-glow',
+    partial: 'bg-system-gold/20 border-system-gold text-system-gold'
   };
 
   return (
-    <div className={`h-24 flex flex-col items-center justify-center border p-2 text-center transition-all duration-500 ${styles[match.result] || styles.incorrect}`}>
-      {/* match.value ahora es directamente el string (ej: "Humano") */}
-      <span className="font-data text-[10px] uppercase tracking-tighter leading-tight">{match.value.es}</span>
-      <div className="mt-2">
-        {match.result === 'higher' && <ArrowUp className="w-5 h-5 system-text" />}
-        {match.result === 'lower' && <ArrowDown className="w-5 h-5 system-text" />}
-        {match.result === 'correct' && <div className="w-1 h-1 bg-white rounded-full animate-ping" />}
+    <div className={`h-20 sm:h-24 flex flex-col relative border transition-all duration-500 overflow-hidden group-hover:brightness-110 ${styles[match.result] || styles.incorrect}`}>
+      
+
+      <div className="bg-black/60 border-b border-inherit px-1 py-0.5 w-full text-center">
+        <span className="font-mono text-[7px] sm:text-[8px] uppercase tracking-[0.1em] sm:tracking-[0.2em] opacity-70 truncate block">{label}</span>
       </div>
+
+
+      <div className="flex-1 flex flex-col items-center justify-center p-1 relative z-10">
+        <span className={`font-system text-[10px] sm:text-xs uppercase text-center leading-tight ${match.result === 'correct' ? 'text-glow-strong' : ''}`}>
+          {match.value.es}
+        </span>
+        
+
+        <div className="mt-1 flex items-center justify-center h-4 sm:h-5">
+          {match.result === 'higher' && <ArrowUp className="w-3 h-3 sm:w-4 sm:h-4 text-system-gold animate-bounce" />}
+          {match.result === 'lower' && <ArrowDown className="w-3 h-3 sm:w-4 sm:h-4 text-system-gold animate-bounce" />}
+          {match.result === 'correct' && (
+            <div className="w-4 sm:w-6 h-[1px] bg-system-green shadow-[0_0_8px_rgba(16,185,129,1)] relative">
+              <div className="absolute w-1.5 h-1.5 sm:w-2 sm:h-2 bg-system-green rounded-full left-1/2 -translate-x-1/2 -top-0.5 sm:-top-1 shadow-[0_0_10px_rgba(16,185,129,1)]" />
+            </div>
+          )}
+        </div>
+      </div>
+      
+
+      <div className="absolute left-0 top-0 w-full h-[1px] bg-white/20 opacity-0 group-hover:animate-scanline-fast" />
     </div>
   );
 };
+
+
 
 export default DleModal;

@@ -1,13 +1,30 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Package, Sword, Shield, Gem, Box, CheckCircle, 
-  Trash2, Coins, User, ShieldAlert, Loader2, Info
+import {
+  Package, Box, CheckCircle,
+  Trash2, Coins, User, Loader2, X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as GiIcons from 'react-icons/gi';
 import { inventoryService, type EquipRequest, type HunterEquipment, type EquippedItem } from '../../services/InventoryService';
 import PreLoader from '../../components/common/Preloader';
+import { GiPerson } from 'react-icons/gi';
+import { toastNotification } from '../../components/common/ToastNotification';
+import axios from 'axios';
+import { useTranslation } from 'react-i18next';
+import { type BackendErrorKey } from '../../types/TranslationsTypes';
 
-// --- HELPERS DE ESTILO ---
+interface ApiError {
+  response?: {
+    status?: number;
+    data?: {
+      detail?: string;
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
 const mapRarity = (rarity: string) => {
   switch (rarity) {
     case 'Legendary': return 'S';
@@ -21,25 +38,24 @@ const getRarityStyles = (rarity?: string) => {
   if (!rarity) return 'border-white/5 bg-white/5 text-white/20';
   const rank = mapRarity(rarity);
   switch (rank) {
-    case 'S': return 'text-orange-400 border-orange-500/40 bg-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.1)]';
-    case 'A': return 'text-purple-400 border-purple-500/40 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.1)]';
-    case 'B': return 'text-blue-400 border-blue-500/40 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.1)]';
-    case 'C': return 'text-green-400 border-green-500/40 bg-green-500/10 shadow-[0_0_15px_rgba(34,197,94,0.1)]';
+    case 'S': return 'text-orange-400 border-orange-500/40 bg-orange-500/10 shadow-[0_0_20px_rgba(249,115,22,0.15)]';
+    case 'A': return 'text-purple-400 border-purple-500/40 bg-purple-500/10 shadow-[0_0_20px_rgba(168,85,247,0.15)]';
+    case 'B': return 'text-blue-400 border-blue-500/40 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.15)]';
+    case 'C': return 'text-green-400 border-green-500/40 bg-green-500/10 shadow-[0_0_20px_rgba(34,197,94,0.15)]';
     default: return 'text-slate-400 border-slate-500/30 bg-slate-500/5';
   }
 };
 
-const ItemIcon = ({ type, className = "w-5 h-5" }: { type: string; className?: string }) => {
-  switch (type) {
-    case 'weapon': return <Sword className={className} />;
-    case 'armor': case 'head': case 'chest': case 'pants': case 'boots': 
-      return <Shield className={className} />;
-    case 'accessory': return <Gem className={className} />;
-    default: return <Box className={className} />;
+const ItemIcon = ({ imageKey, className = "w-6 h-6" }: { imageKey?: string; className?: string }) => {
+  if (!imageKey) return <Box className={className} />;
+  if (imageKey in GiIcons) {
+    const IconComponent = GiIcons[imageKey as keyof typeof GiIcons];
+    return <IconComponent className={className} />;
   }
+  return <Box className={className} />;
 };
 
-// --- COMPONENTE SLOT DE EQUIPO ---
+
 interface EquipmentSlotProps {
   slot: keyof HunterEquipment;
   label: string;
@@ -49,46 +65,40 @@ interface EquipmentSlotProps {
 }
 
 const EquipmentSlot = ({ slot, label, item, onUnequip, isPending }: EquipmentSlotProps) => {
-  const getIconType = () => {
-    if (['main_hand', 'off_hand'].includes(slot)) return 'weapon';
-    if (['head', 'chest', 'pants', 'boots'].includes(slot)) return 'armor';
-    return 'accessory';
-  };
-
   return (
-    <div className="flex flex-col items-center gap-1 group">
-      <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-tighter">{label}</span>
-      <button 
+    <div className="flex flex-col items-center gap-1.5 group">
+      <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">{label}</span>
+      <button
         onClick={() => item && !isPending && onUnequip(slot)}
         disabled={isPending}
-        className={`w-12 h-12 rounded border-2 flex items-center justify-center transition-all relative
-          ${item ? getRarityStyles(item.rarity) + ' cursor-pointer hover:scale-110 hover:border-red-500/50' : 'border-white/5 bg-black/40 cursor-default'}`}
+        className={`w-16 h-16 rounded-lg border-2 flex items-center justify-center transition-all relative backdrop-blur-sm
+          ${item ? getRarityStyles(item.rarity) + ' cursor-pointer hover:scale-105 hover:border-red-500/60' : 'border-white/10 bg-black/60 cursor-default shadow-inner'}`}
       >
         {isPending ? (
-          <Loader2 className="w-4 h-4 animate-spin text-cyan-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />
         ) : item ? (
           <>
-            <ItemIcon type={getIconType()} />
-            <div className="absolute inset-0 bg-red-600/20 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded transition-opacity">
-               <Trash2 className="w-3 h-3 text-white" />
+            <ItemIcon imageKey={item.image_key} className="w-8 h-8" />
+            <div className="absolute inset-0 bg-red-600/20 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-lg transition-opacity">
+              <Trash2 className="w-4 h-4 text-white drop-shadow" />
             </div>
           </>
         ) : (
-          <div className="w-2 h-2 bg-white/5 rotate-45" />
+          <div className="w-2 h-2 bg-white/10 rotate-45" />
         )}
       </button>
     </div>
   );
 };
 
-// --- COMPONENTE PRINCIPAL ---
+
 const InventoryPanel = () => {
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<'all' | 'weapon' | 'armor' | 'accessory'>('all');
+  const [filter, setFilter] = useState<'all' | 'weapon' | 'armor' | 'accessory' | 'potion'>('all');
   const [selectedInvId, setSelectedInvId] = useState<number | null>(null);
-  const [showDualModal, setShowDualModal] = useState(false);
 
-  // Consultas
+  const { t } = useTranslation();
+
   const { data: inventory = [], isLoading: loadingInv } = useQuery({
     queryKey: ['inventory'],
     queryFn: inventoryService.getInventory
@@ -99,26 +109,43 @@ const InventoryPanel = () => {
     queryFn: inventoryService.getEquipment
   });
 
+  const sortedInventory = useMemo(() => {
+    if (!inventory) return [];
+    const equippedIds = equipment ? Object.values(equipment).map(e => e?.inventory_id) : [];
+    return [...inventory].sort((a, b) => {
+      const aIsEquipped = equippedIds.includes(a.id);
+      const bIsEquipped = equippedIds.includes(b.id);
+      if (aIsEquipped && !bIsEquipped) return -1;
+      if (!aIsEquipped && bIsEquipped) return 1;
+      return 0;
+    });
+  }, [inventory, equipment]);
+
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['inventory'] });
     queryClient.invalidateQueries({ queryKey: ['equipment'] });
     queryClient.invalidateQueries({ queryKey: ['playerProfile'] });
   };
 
-  // Mutaciones
   const equipMutation = useMutation({
     mutationFn: (data: EquipRequest) => inventoryService.equipItem(data),
     onSuccess: () => {
-      setShowDualModal(false);
+      setSelectedInvId(null);
       invalidateAll();
     },
-    onError: (err) => alert(err || "Error al equipar")
+    onError: (err: unknown) => {
+      const error = err as ApiError;
+      alert(error?.response?.data?.message || error?.message || t('inventory.equip_error'));
+    }
   });
 
   const unequipMutation = useMutation({
     mutationFn: (slot: keyof HunterEquipment) => inventoryService.unequipItem(slot),
     onSuccess: () => invalidateAll(),
-    onError: (err) => alert(err || "Error al desequipar")
+    onError: (err: unknown) => {
+      const error = err as ApiError;
+      alert(error?.response?.data?.message || error?.message || t('inventory.unequip_error'));
+    }
   });
 
   const sellMutation = useMutation({
@@ -129,194 +156,278 @@ const InventoryPanel = () => {
     },
   });
 
+const usePotionMutation = useMutation({
+  mutationFn: (inventoryId: number) => inventoryService.usePotion(inventoryId),
+  onSuccess: () => {
+    setSelectedInvId(null);
+    invalidateAll();
+  },
+  onError: (err: unknown) => {
+    if (axios.isAxiosError(err)) {
+      const errorCode: BackendErrorKey = err.response?.data?.mensaje || err.response?.data?.detail;
+      toastNotification.error(
+        t('inventory.use_potion_error'),
+        `${t(`backend_errors.${errorCode}`)}`
+      );
+    } else {
+      toastNotification.error(
+        t('inventory.use_potion_error'),
+        `${t('backend_errors.ERR_INTERNAL_SYSTEM')}`
+      );
+    }
+  }
+});
+
   const selectedSlot = inventory.find(s => s.id === selectedInvId);
 
-  // Manejador del botón Equipar
-  const handleEquipClick = () => {
-    if (!selectedSlot) return;
+  const selectedSlotEquippedSlot = useMemo<keyof HunterEquipment | null>(() => {
+    if (!selectedSlot || !equipment) return null;
+    const found = Object.entries(equipment).find(([, eq]) => eq?.inventory_id === selectedSlot.id);
+    return found ? (found[0] as keyof HunterEquipment) : null;
+  }, [selectedSlot, equipment]);
 
-    const { slot_type } = selectedSlot.items;
+  const selectedSlotIsEquipped = Boolean(selectedSlotEquippedSlot);
 
-    // Si es dual_hand, abrimos modal para que el usuario elija
-    if (slot_type === 'dual_hand') {
-      setShowDualModal(true);
-    } else {
-      // Si es normal, enviamos directamente
-      equipMutation.mutate({ 
-        inventory_id: selectedSlot.id, 
-        slot: slot_type as EquipRequest['slot']
-      });
-    }
-  };
+  const selectedSlotOtherHand = selectedSlot?.items.slot_type === 'either_hand' && selectedSlotEquippedSlot
+    ? (selectedSlotEquippedSlot === 'main_hand' ? 'off_hand' : 'main_hand')
+    : null;
 
-  if (loadingInv || loadingEquip) return <PreLoader message="Accediendo a la bóveda del sistema..." />;
+  if (loadingInv || loadingEquip){
+    return (
+      <div className="min-h-170 bg-background flex items-center justify-center p-6">
+        <PreLoader message={t('inventory.loading_vault')} />
+      </div>
+    ); 
+  } 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in p-4 relative">
-      
-      {/* MODAL PARA DUAL_HAND */}
-      {showDualModal && selectedSlot && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#0a0a0a] border border-cyan-500/50 p-6 rounded-lg max-w-sm w-full shadow-[0_0_30px_rgba(6,182,212,0.2)]">
-            <h3 className="text-cyan-400 font-mono text-sm mb-2 flex items-center gap-2">
-              <Info className="w-4 h-4" /> SELECCIONAR MANO
-            </h3>
-            <p className="text-slate-400 text-xs mb-6">
-              Este objeto es versátil. ¿En qué mano deseas equipar <span className="text-white font-bold">"{selectedSlot.items.name.es}"</span>?
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={() => equipMutation.mutate({ inventory_id: selectedSlot.id, slot: 'main_hand' })}
-                disabled={equipMutation.isPending}
-                className="bg-cyan-900/50 hover:bg-cyan-500 text-cyan-400 hover:text-black border border-cyan-500/30 py-2 rounded font-mono text-[10px] uppercase transition-all"
-              >
-                Mano Principal
-              </button>
-              <button 
-                onClick={() => equipMutation.mutate({ inventory_id: selectedSlot.id, slot: 'off_hand' })}
-                disabled={equipMutation.isPending}
-                className="bg-cyan-900/50 hover:bg-cyan-500 text-cyan-400 hover:text-black border border-cyan-500/30 py-2 rounded font-mono text-[10px] uppercase transition-all"
-              >
-                Mano Secundaria
-              </button>
-              <button 
-                onClick={() => setShowDualModal(false)}
-                className="col-span-2 text-slate-500 hover:text-white text-[9px] uppercase mt-2 transition-colors"
-              >
-                Cancelar
-              </button>
+    <div className="max-w-7xl mx-auto p-6 space-y-5 animate-fade-in relative">
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="system-panel rounded-xl p-6 bg-black/70 border border-cyan-500/20 backdrop-blur-md flex flex-col h-[660px]">
+          <div className="flex flex-col gap-3 mb-5 shrink-0">
+            <h2 className="text-lg font-mono text-cyan-400 tracking-wider flex items-center gap-2 font-bold">
+              <Package className="w-6 h-6 text-cyan-400 animate-pulse" /> {t('inventory.backpack_title')}
+            </h2>
+
+            <div className="flex gap-1.5 flex-wrap">
+              {(['all', 'weapon', 'armor', 'accessory', 'potion'] as const).map((f) => (
+                <button key={f} onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 rounded text-sm border font-data uppercase transition-all tracking-tight
+                  ${filter === f ? 'bg-cyan-500 text-black border-cyan-500 font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]' : 'border-white/10 text-muted-foreground hover:border-white/30 hover:text-white'}`}>
+                  {t(`inventory.filter_${f}`)}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* SECCIÓN IZQUIERDA: MOCHILA */}
-      <div className="lg:col-span-5 system-panel rounded-lg p-5 bg-black/60 border border-white/10 backdrop-blur-md">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-mono text-cyan-400 tracking-tighter flex items-center gap-2">
-            <Package className="w-4 h-4" /> MOCHILA
-          </h2>
-          <div className="flex gap-1">
-            {(['all', 'weapon', 'armor', 'accessory'] as const).map((f) => (
-              <button key={f} onClick={() => setFilter(f)} 
-                className={`px-2 py-0.5 rounded text-[9px] border font-mono uppercase transition-all
-                ${filter === f ? 'bg-cyan-500 text-black border-cyan-500' : 'border-white/10 text-muted-foreground hover:border-white/30'}`}>
-                {f}
+          <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] auto-rows-max gap-3.5">
+            {sortedInventory.filter(s => filter === 'all' || s.items.type === filter).map(slot => (
+              <button
+                key={slot.id}
+                onClick={() => setSelectedInvId(slot.id)}
+                className={`relative w-20 h-20 mt-2 rounded-lg border-2 flex items-center justify-center transition-all bg-black/40 mx-auto
+                  ${getRarityStyles(slot.items.rarity)}
+                  ${selectedInvId === slot.id ? 'ring-2 ring-cyan-400 scale-95 shadow-lg border-white' : 'hover:brightness-125 hover:scale-105'}`}
+              >
+                <ItemIcon imageKey={slot.items.image_key} className="w-10 h-10" />
+
+                {slot.quantity && slot.quantity > 1 && (
+                  <div className="absolute bottom-1 right-1 bg-system-glow/30 border border-cyan-500/40 rounded px-1.5 h-5 flex items-center justify-center shadow-[0_0_8px_rgba(6,182,212,0.25)] pointer-events-none select-none z-10">
+                    <span className="text-[10px] font-mono text-cyan-300 font-black tracking-tight leading-none">
+                      {slot.quantity}
+                    </span>
+                  </div>
+                )}
+
+                {equipment && Object.values(equipment).some((e) => e?.inventory_id === slot.id) && (
+                  <div className="absolute top-1 left-1 bg-cyan-500 rounded-full p-0.5 shadow-md">
+                    <CheckCircle className="w-2.5 h-2.5 text-black" />
+                  </div>
+                )}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-          {inventory.filter(s => filter === 'all' || s.items.type === filter).map(slot => (
-            <button
-              key={slot.id}
-              onClick={() => setSelectedInvId(slot.id)}
-              className={`relative aspect-square rounded border-2 flex items-center justify-center transition-all 
-                ${getRarityStyles(slot.items.rarity)} 
-                ${selectedInvId === slot.id ? 'ring-2 ring-white scale-95 shadow-lg' : 'hover:brightness-125'}`}
+        <div className="system-panel rounded-xl p-6 bg-black/70 border border-purple-500/20 backdrop-blur-md flex flex-col items-center h-[660px] justify-between">
+          <h2 className="text-lg font-mono text-purple-400 uppercase tracking-widest flex items-center gap-2 font-bold shrink-0">
+            <User className="w-6 h-6 text-purple-400" /> {t('inventory.equipment_title')}
+          </h2>
+
+          <div className="relative w-full max-w-[400px] aspect-[3/4] flex items-center justify-center my-auto">
+            <div className="absolute bottom-8 inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+              <GiPerson  className="w-99 h-99 text-purple-500" />
+            </div>
+
+            <div className="z-10 grid grid-cols-3 gap-x-18 gap-y-5 w-full h-full content-center">
+              <div className="col-start-2 justify-self-center">
+                <EquipmentSlot slot="head" label={t('inventory.slot_head')} item={equipment?.head ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
+              </div>
+              <div className="col-start-1 row-start-2 justify-self-start">
+                <EquipmentSlot slot="main_hand" label={t('inventory.slot_main_hand')} item={equipment?.main_hand ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
+              </div>
+              <div className="col-start-2 row-start-2 justify-self-center">
+                <EquipmentSlot slot="chest" label={t('inventory.slot_chest')} item={equipment?.chest ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
+              </div>
+              <div className="col-start-3 row-start-2 justify-self-end">
+                <EquipmentSlot slot="off_hand" label={t('inventory.slot_off_hand')} item={equipment?.off_hand ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
+              </div>
+              <div className="col-start-2 row-start-3 justify-self-center">
+                <EquipmentSlot slot="pants" label={t('inventory.slot_pants')} item={equipment?.pants ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
+              </div>
+              <div className="col-start-1 row-start-4 justify-self-start">
+                <EquipmentSlot slot="accessory" label={t('inventory.slot_accessory')} item={equipment?.accessory ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
+              </div>
+              <div className="col-start-2 row-start-4 justify-self-center">
+                <EquipmentSlot slot="boots" label={t('inventory.slot_boots')} item={equipment?.boots ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {selectedSlot && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <div className="absolute inset-0" onClick={() => setSelectedInvId(null)} />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="relative w-full max-w-lg rounded-xl p-6 system-panel flex flex-col justify-between z-10 max-h-[90vh] overflow-y-auto"
             >
-              <ItemIcon type={slot.items.type} />
-              {equipment && Object.values(equipment).some((e) => e?.inventory_id === slot.id) && (
-                <div className="absolute top-0.5 right-0.5 bg-cyan-500 rounded-full p-0.5 shadow-sm">
-                  <CheckCircle className="w-2 h-2 text-black" />
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* SECCIÓN CENTRAL: AVATAR */}
-      <div className="lg:col-span-4 system-panel rounded-lg p-5 bg-black/60 border border-white/10 flex flex-col items-center min-h-[400px]">
-        <h2 className="text-sm font-mono text-purple-400 mb-8 uppercase tracking-widest flex items-center gap-2">
-          <User className="w-4 h-4" /> AVATAR
-        </h2>
-        
-        <div className="relative w-full max-w-[220px] aspect-[3/4] flex justify-center">
-          <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-              <User className="w-48 h-48 text-white" />
-          </div>
-
-          <div className="z-10 grid grid-cols-3 gap-x-10 gap-y-6 w-full h-full">
-            <div className="col-start-2 justify-self-center">
-               <EquipmentSlot slot="head" label="Cabeza" item={equipment?.head ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
-            </div>
-            <div className="col-start-1 row-start-2">
-               <EquipmentSlot slot="main_hand" label="Mano P." item={equipment?.main_hand ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
-            </div>
-            <div className="col-start-2 row-start-2">
-               <EquipmentSlot slot="chest" label="Pecho" item={equipment?.chest ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
-            </div>
-            <div className="col-start-3 row-start-2">
-               <EquipmentSlot slot="off_hand" label="Mano S." item={equipment?.off_hand ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
-            </div>
-            <div className="col-start-2 row-start-3">
-               <EquipmentSlot slot="pants" label="Piernas" item={equipment?.pants ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
-            </div>
-            <div className="col-start-1 row-start-4">
-               <EquipmentSlot slot="accessory" label="Accesorio" item={equipment?.accessory ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
-            </div>
-            <div className="col-start-2 row-start-4">
-               <EquipmentSlot slot="boots" label="Pies" item={equipment?.boots ?? null} onUnequip={(s) => unequipMutation.mutate(s)} isPending={unequipMutation.isPending} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* SECCIÓN DERECHA: DETALLES */}
-      <div className="lg:col-span-3">
-        {selectedSlot ? (
-          <div className="rounded-xl p-4 border border-cyan-500/30 bg-cyan-500/5 animate-in slide-in-from-right-4 duration-300 shadow-2xl">
-            <div className="flex justify-between items-start mb-4">
-              <div className={`p-2 rounded border-2 ${getRarityStyles(selectedSlot.items.rarity)}`}>
-                <ItemIcon type={selectedSlot.items.type} className="w-6 h-6" />
-              </div>
-              <span className={`text-[9px] font-mono font-bold border px-2 py-0.5 rounded ${getRarityStyles(selectedSlot.items.rarity)}`}>
-                {selectedSlot.items.rarity.toUpperCase()}
-              </span>
-            </div>
-
-            <h3 className="text-sm font-bold text-white uppercase mb-1">{selectedSlot.items.name.es}</h3>
-            <p className="text-[10px] text-slate-400 italic mb-4 leading-relaxed">
-              "{selectedSlot.items.description?.es || "Objeto de origen desconocido encontrado en una mazmorra."}"
-            </p>
-
-            <div className="bg-black/40 p-3 rounded border border-white/5 mb-4 shadow-inner">
-              <p className="text-[8px] font-mono text-cyan-400 uppercase mb-1">Efectos del Objeto:</p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-white">+{selectedSlot.items.stat_value} {selectedSlot.items.stat_type.toUpperCase()}</span>
-                <span className="text-[8px] text-slate-500 font-mono italic">Slot: {selectedSlot.items.slot_type.replace('_', ' ')}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
               <button
-                onClick={handleEquipClick}
-                disabled={equipMutation.isPending}
-                className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-black text-[10px] font-bold py-2 rounded uppercase transition-all shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+                onClick={() => setSelectedInvId(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-cyan-400 transition-colors p-1"
               >
-                {equipMutation.isPending ? "Procesando..." : "Equipar Objeto"}
+                <X className="w-5 h-5" />
               </button>
-              
-              <button 
-                onClick={() => sellMutation.mutate(selectedSlot.id)}
-                disabled={sellMutation.isPending}
-                className="w-full bg-amber-500/5 hover:bg-amber-500 hover:text-black text-amber-500 border border-amber-500/20 py-2 rounded text-[9px] font-mono uppercase transition-all flex items-center justify-center gap-2"
-              >
-                Vender por {Math.floor(selectedSlot.items.price * 0.5)} <Coins className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/5 rounded-xl bg-black/20 min-h-[300px]">
-            <ShieldAlert className="w-10 h-10 text-white/5 mb-3" />
-            <p className="text-[9px] font-mono text-muted-foreground uppercase leading-relaxed max-w-[150px]">
-              Analizador de sistema esperando selección de objeto...
-            </p>
+
+              <div>
+                <div className="flex justify-between items-start mb-5 pr-6">
+                  <div className={`p-3 rounded-lg border-2 bg-black/40 ${getRarityStyles(selectedSlot.items.rarity)}`}>
+                    <ItemIcon imageKey={selectedSlot.items.image_key} className="w-8 h-8" />
+                  </div>
+                  <span className={`text-[11px] font-mono font-bold border-2 px-3 py-1 rounded-md tracking-wider uppercase ${getRarityStyles(selectedSlot.items.rarity)}`}>
+                    {t('inventory.rank_label')} {mapRarity(selectedSlot.items.rarity)}
+                  </span>
+                </div>
+
+                <h3 className="text-lg font-mono font-bold text-white uppercase tracking-wide border-b border-white/10 pb-2 mb-3">
+                  {selectedSlot.items.name.es}
+                </h3>
+                <p className="text-xs text-slate-300 italic mb-6 leading-relaxed bg-black/50 p-3 rounded-lg border border-white/5">
+                  "{selectedSlot.items.description?.es || t('inventory.unknown_item')}"
+                </p>
+
+                <div className="bg-cyan-950/30 p-4 rounded-lg border border-cyan-500/20 shadow-inner space-y-2 mb-6">
+                  <p className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest font-bold">{t('inventory.item_effects')}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-mono text-cyan-100 font-bold">
+                      +{selectedSlot.items.stat_value} {selectedSlot.items.stat_type.toUpperCase()}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono uppercase bg-white/5 px-2 py-0.5 rounded">
+                      {t('inventory.slot_label')}: {selectedSlot.items.slot_type.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-white/5 shrink-0">
+                {selectedSlot.items.type === 'potion' ? (
+                  <button
+                    onClick={() => usePotionMutation.mutate(selectedSlot.id)}
+                    disabled={usePotionMutation.isPending}
+                    className="w-full bg-green-500 hover:bg-green-400 text-black text-xs font-mono font-bold py-3 rounded-lg uppercase transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] disabled:opacity-50 raw-btn"
+                  >
+                    {usePotionMutation.isPending ? t('inventory.consuming') : t('inventory.use_potion')}
+                  </button>
+                ) : selectedSlotIsEquipped ? (
+                  <>
+                    <button
+                      onClick={() => selectedSlotEquippedSlot && unequipMutation.mutate(selectedSlotEquippedSlot)}
+                      disabled={unequipMutation.isPending}
+                      className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-xs font-mono font-bold py-3 rounded-lg uppercase transition-all shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+                    >
+                      {unequipMutation.isPending
+                        ? t('inventory.unequipping')
+                        : selectedSlot.items.slot_type === 'either_hand'
+                          ? selectedSlotEquippedSlot === 'off_hand'
+                            ? t('inventory.unequip_off_hand')
+                            : t('inventory.unequip_main_hand')
+                          : t('inventory.unequip_item')}
+                    </button>
+
+                    {selectedSlotOtherHand && (
+                      <button
+                        onClick={() => equipMutation.mutate({
+                          inventory_id: selectedSlot.id,
+                          slot: selectedSlotOtherHand
+                        })}
+                        disabled={equipMutation.isPending}
+                        className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-mono font-bold py-3 rounded-lg uppercase transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                      >
+                        {equipMutation.isPending
+                          ? t('inventory.loading_sync')
+                          : selectedSlotOtherHand === 'main_hand'
+                            ? t('inventory.equip_main_hand')
+                            : t('inventory.equip_off_hand')}
+                      </button>
+                    )}
+                  </>
+                ) : selectedSlot.items.slot_type === 'either_hand' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => equipMutation.mutate({ inventory_id: selectedSlot.id, slot: 'main_hand' })}
+                      disabled={equipMutation.isPending}
+                      className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-mono font-bold py-3 rounded-lg uppercase transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                    >
+                      {t('inventory.main_hand')}
+                    </button>
+                    <button
+                      onClick={() => equipMutation.mutate({ inventory_id: selectedSlot.id, slot: 'off_hand' })}
+                      disabled={equipMutation.isPending}
+                      className="w-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white text-xs font-mono font-bold py-3 rounded-lg uppercase transition-all border border-white/10"
+                    >
+                      {t('inventory.off_hand')}
+                    </button>
+                  </div>
+                ) : selectedSlot.items.slot_type === 'dual_hand' ? (
+                  <button
+                    onClick={() => equipMutation.mutate({ inventory_id: selectedSlot.id, slot: 'main_hand' })}
+                    disabled={equipMutation.isPending}
+                    className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-mono font-bold py-3 rounded-lg uppercase transition-all shadow-[0_0_20px_rgba(147,51,234,0.4)]"
+                  >
+                    {t('inventory.equip_both_hands')}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => equipMutation.mutate({
+                      inventory_id: selectedSlot.id,
+                      slot: selectedSlot.items.slot_type as EquipRequest['slot']
+                    })}
+                    disabled={equipMutation.isPending}
+                    className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-mono font-bold py-3 rounded-lg uppercase transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+                  >
+                    {equipMutation.isPending ? t('inventory.loading_sync') : t('inventory.equip_item')}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => sellMutation.mutate(selectedSlot.id)}
+                  disabled={sellMutation.isPending}
+                  className="w-full bg-amber-500/5 hover:bg-amber-500 hover:text-black text-amber-400 border border-amber-500/30 py-2.5 rounded-lg text-xs font-mono uppercase transition-all flex items-center justify-center gap-2 font-bold"
+                >
+                  {t('inventory.sell_for')} {Math.floor(selectedSlot.items.price * 0.5)} <Coins className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { createContext } from 'react';
 import { useContext } from 'react';
 
-//Context
+
 export type Theme = 'blue' | 'purple';
 
 export interface ThemeContextType {
@@ -11,7 +11,7 @@ export interface ThemeContextType {
 
 export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-//Hook
+
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {

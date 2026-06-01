@@ -23,13 +23,12 @@ export const SystemNotifyProvider = ({ children }: { children: React.ReactNode }
   }, []);
 
   const hideNotify = useCallback(() => {
-    // 1. Ejecutamos la acción si existe. 
-    // Accedemos a la acción directamente desde el estado actual
+    
     setState((prevState) => {
       if (prevState.onCloseAction) {
         prevState.onCloseAction();
       }
-      // 2. Retornamos el nuevo estado (cerrado y limpio)
+    
       return { 
         ...prevState, 
         isOpen: false, 

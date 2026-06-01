@@ -5,13 +5,25 @@ export interface Item {
   id: number;
   name: { es: string; en: string };
   description: { es: string; en: string };
-  type: 'armor' | 'weapon' | 'accessory' | 'potion'; // 'potion' añadido por coherencia
-  // IMPORTANTE: Incluimos 'dual_hand' para que React sepa cuándo mostrar el modal
-  slot_type: 'head' | 'chest' | 'pants' | 'boots' | 'main_hand' | 'off_hand' | 'accessory' | 'dual_hand';
+  type: 'armor' | 'weapon' | 'accessory' | 'potion'; 
+  slot_type: 'head' | 'chest' | 'pants' | 'boots' | 'main_hand' | 'off_hand' | 'accessory' | 'dual_hand' | 'either_hand';
   rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
   price: number;
   stat_type: string;
   stat_value: number;
+  image_key: string; // Corregido: nombre unificado y cambiado de Text a string
+}
+
+export interface UsePotionResponse {
+  status: 'success' | 'error';
+  message: string;
+  potion_type: string; 
+  amount_restored: number;
+  hunter_stats: {
+    health?: number;
+    mana?: number;
+    fatigue?: number;
+  };
 }
 
 export interface InventorySlot {
@@ -29,6 +41,7 @@ export interface EquippedItem {
   rarity: string;
   stat_type: string;
   stat_value: number;
+  image_key: string; 
 }
 
 export interface HunterEquipment {
@@ -41,10 +54,8 @@ export interface HunterEquipment {
   accessory: EquippedItem | null;
 }
 
-// Datos para la petición de equipar
 export interface EquipRequest {
   inventory_id: number;
-  // El slot que enviamos al Back SIEMPRE debe ser una columna real de hunter_equipment
   slot: 'head' | 'chest' | 'pants' | 'boots' | 'main_hand' | 'off_hand' | 'accessory';
 }
 
@@ -55,9 +66,8 @@ export interface InventoryResponse {
   new_balance?: number;
 }
 
-// 2. SERVICE OPTIMIZADO
+
 export const inventoryService = {
-  
   getInventory: async (): Promise<InventorySlot[]> => {
     const response = await apiClient.get<InventorySlot[]>("/inventory/");
     return response.data;
@@ -68,11 +78,6 @@ export const inventoryService = {
     return response.data;
   },
 
-  /**
-   * Equipa un objeto. 
-   * Recuerda: si el item.slot_type es 'dual_hand', antes de llamar a esta función,
-   * el componente React debe haber decidido si el 'slot' será 'main_hand' u 'off_hand'.
-   */
   equipItem: async (data: EquipRequest): Promise<InventoryResponse> => {
     const response = await apiClient.post<InventoryResponse>("/inventory/equip", data);
     return response.data;
@@ -83,13 +88,13 @@ export const inventoryService = {
     return response.data;
   },
 
-  /**
-   * Vende un objeto y actualiza la economía del jugador.
-   */
   sellItem: async (inventoryId: number): Promise<InventoryResponse> => {
     const response = await apiClient.post<InventoryResponse>(`/inventory/sell/${inventoryId}`);
     return response.data;
-  }
+  },
 
-  // Se elimina discardItem ya que decidimos que no tiene sentido existiendo la venta.
+  usePotion: async (inventoryId: number): Promise<UsePotionResponse> => {
+    const response = await apiClient.post<UsePotionResponse>(`/inventory/use_potion/${inventoryId}`);
+    return response.data;
+  }
 };
